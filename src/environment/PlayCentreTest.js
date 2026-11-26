@@ -607,7 +607,7 @@ export class PlayCentreTest {
       this.attendant.reportNoise(position, 9);
       this.noiseCooldown = 1.4;
     }
-    this.attendant.update(delta, position, player.hidden);
+    if (!this.complete) this.attendant.update(delta, position, player.hidden);
 
     if (this.caught) {
       this.caught = false;
