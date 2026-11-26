@@ -1,32 +1,20 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>First Person Starter Kit</title>
+  <meta name="theme-color" content="#12171b" />
+  <meta name="description" content="An early first-person environment test in an abandoned indoor play centre." />
+  <title>Play Centre — After-Hours Test</title>
   <link rel="icon" type="image/png" href="/icon/cube_icon.png" />
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    body {
-      overflow: hidden;
-      background: #000;
-    }
-    #blocker {
-      display: none;
-    }
-    canvas {
-      display: block;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #12171b; }
+    body { cursor: crosshair; }
+    canvas { display: block; width: 100%; height: 100%; }
   </style>
 </head>
 <body>
-  <div id="blocker">
-    <p>Click to play<br><small>WASD to move &bull; Mouse to look &bull; Shift to run</small></p>
-  </div>
   <script type="module" src="/src/main.js"></script>
 </body>
 </html>

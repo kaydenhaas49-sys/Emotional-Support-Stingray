@@ -6,21 +6,24 @@ This roadmap is intentionally prototype-first. Finish each stage with something 
 - [x] Preserve the Three.js/Vite first-person starter.
 - [x] Separate editable character/animation source files from browser runtime assets.
 - [x] Document the currently imported asset licences.
-- [ ] Add the soft-play environment pack.
-- [ ] Add the damaged plaster and concrete textures.
-- [ ] Verify every imported model opens and renders correctly.
+- [x] Add the soft-play environment pack.
+- [x] Add the damaged plaster and concrete textures.
+- [ ] Verify every imported model opens and renders correctly in the browser.
 
-## Stage 1 — Greybox the first area
-- [ ] Replace the forest demo layout with a compact indoor play-centre blockout.
-- [ ] Establish scale, navigation routes, doors, and staff-only spaces.
-- [ ] Add collision and basic interaction prompts.
-- [ ] Define a clear start and end point for the slice.
+## Stage 1 — First playable environment test
+- [x] Replace the forest demo startup with an indoor play-centre greybox.
+- [x] Establish a main play room, front entrance, and staff-only corridor.
+- [x] Add basic first-person collision for room walls and the reception counter.
+- [x] Add a maintenance-note and breaker-panel interaction loop.
+- [x] Define a start point and a simple end condition.
+- [ ] Review scale, navigation, and imported model placement in the browser.
+- [ ] Add collision against the play structure and remaining large props.
 
-## Stage 2 — Core horror systems
-- [ ] Add ambience, positional audio, and simple sound cues.
-- [ ] Add environmental clues and a small interaction/puzzle loop.
-- [ ] Add save/restart behaviour for the slice.
-- [ ] Tune lighting and visibility for readability.
+## Stage 2 — Core atmosphere and interaction
+- [ ] Add ambient and positional audio.
+- [ ] Add more environmental clues and a small puzzle loop.
+- [ ] Add save/restart behaviour beyond a page reload.
+- [ ] Tune lighting, fog, and material tiling after browser review.
 
 ## Stage 3 — Original attendants
 - [ ] Define original silhouettes and visual language.

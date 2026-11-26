@@ -6,86 +6,83 @@ An experimental first-person horror game prototype built with Three.js and Vite.
 
 ## The idea
 
-Explore an abandoned indoor play centre that has been left to decay. The space should feel like a place that was once bright, noisy, and safe, but is now quiet, damaged, and unsettling. Two original robotic attendants with contrasting operating modes are part of the concept.
+Explore an abandoned indoor play centre that has been left to decay. The space should feel like a place that was once bright, noisy, and safe, but is now quiet, damaged, and unsettling. Two original robotic attendants with contrasting operating modes and behaviours are part of the concept.
 
 The ruined daycare from *Five Nights at Freddy's: Security Breach – RUIN* is a mood reference only. This project is intended to have its own setting, characters, designs, story, and gameplay. No FNAF characters, models, maps, audio, or lore are part of the project.
 
 ## Current status
 
-This repository currently contains the Three.js first-person starter kit and an initial collection of model and animation assets. It is **not yet a complete horror game**. The existing forest scene, skybox paths, and debug controls are retained as a working technical sandbox while the horror environment is built.
+The repository now contains the **first playable environment test**: an enclosed play-centre room, the soft-play model, damaged plaster and concrete materials, basic collision, and a small maintenance-note-to-breaker objective. It is a greybox test and still needs browser review and visual tuning. The original starter-kit modules remain the technical foundation.
 
 ## Getting started
 
 Requirements: Node.js and npm.
 
-```bash
-npm install
-npm run dev
-```
+    npm install
+    npm run dev
 
 Open the local Vite URL printed in the terminal.
 
 Build a production bundle with:
 
-```bash
-npm run build
-npm run preview
-```
+    npm run build
+    npm run preview
 
-## Current controls
+## Controls
 
 - **WASD** — move
 - **Mouse** — look around
 - **Shift** — run
-- **Click** — enter pointer-lock gameplay
+- **E** — interact
+- **Escape** — pause / release mouse
+- **R** — restart after completing the test
+
+Click **Enter Test** to begin.
+
+## First test
+
+See [docs/FIRST_TEST.md](docs/FIRST_TEST.md) for the layout, objective, controls, and known limitations.
 
 ## Project layout
 
-```text
-src/
-  core/           Scene, camera, renderer, player, and game loop
-  input/          Keyboard and pointer-lock input
-  lighting/       Lights and lighting presets
-  skybox/         Skybox loading and controls
-  models/         GLTF/GLB loading
-  gui/            Developer tuning panels
-  ui/             On-screen interface
-  debug/          Debug logging and controls
-  environment/    Planned environment systems
-  characters/     Planned character setup and animation
-  ai/             Planned attendant behaviour
-  interactions/   Planned doors, objects, and puzzles
-  audio/          Planned sound and ambience systems
+    src/
+      core/           Scene, camera, renderer, player, and game loop
+      input/          Keyboard and pointer-lock input
+      lighting/       Retained starter-kit lighting helpers
+      skybox/         Retained starter-kit skybox helpers
+      models/         GLTF/GLB loading utilities
+      environment/    Play-centre test environment
+      ui/             Test HUD
+      gui/            Retained developer tuning panels
+      debug/          Retained starter-kit debug logging
 
-assets/
-  characters/     Editable/source character files
-  animations/     FBX animation source files
+    assets/
+      characters/     Editable/source character files
+      animations/     FBX animation source files
 
-public/
-  assets/         Runtime-loadable GLB files and future game assets
-  models/         Existing starter-kit demo models (kept at their current paths)
-  skyboxes/       Existing starter-kit skyboxes (kept at their current paths)
+    public/
+      assets/         Runtime-loadable GLB files and textures
+      models/         Existing starter-kit demo models
+      skyboxes/       Existing starter-kit skyboxes
 
-docs/
-  GAME_DESIGN.md
-  ROADMAP.md
-  ASSET_CREDITS.md
-```
+    docs/
+      GAME_DESIGN.md
+      ROADMAP.md
+      FIRST_TEST.md
+      ASSET_CREDITS.md
 
 ## Asset handling
 
-- GLB files intended to load in the browser belong under `public/assets/`.
-- The uploaded soft-play environment scene is at `public/assets/environment/soft-play/model.glb`.
-- Blender, FBX, and OBJ source files belong under `assets/`.
-- Keep each asset pack's licence and attribution information with the pack or documented in [docs/ASSET_CREDITS.md](docs/ASSET_CREDITS.md).
-- The original starter-kit paths under `public/models/` and `public/skyboxes/` are intentionally unchanged so the current demo continues to load.
+- GLB files intended to load in the browser belong under public/assets/.
+- The soft-play environment scene is at public/assets/environment/soft-play/model.glb.
+- Blender, FBX, and OBJ source files belong under assets/.
+- Poly Haven environment texture maps are under public/assets/textures/.
+- Keep original licence/readme files alongside source assets whenever possible and record imported asset provenance in [docs/ASSET_CREDITS.md](docs/ASSET_CREDITS.md).
 
 ## Technology
 
 - [Three.js](https://threejs.org/)
 - [Vite](https://vite.dev/)
-- [lil-gui](https://lil-gui.georgealways.com/)
-- [Rapier](https://rapier.rs/) is a candidate for physics; it is not installed yet.
-- [Yuka](https://mugen87.github.io/yuka/) is a candidate for steering/AI; it is not installed yet.
+- [lil-gui](https://lil-gui.georgealways.com/) — retained for future developer tools
 
-See [ARCHITECTURE.md](ARCHITECTURE.md), [docs/GAME_DESIGN.md](docs/GAME_DESIGN.md), and [docs/ROADMAP.md](docs/ROADMAP.md).
+Physics and navigation libraries remain candidates, not installed dependencies. The first test uses simple axis-aligned room collision and does not yet provide collision against the imported play structure.

@@ -1,171 +1,65 @@
-/**
- * First Person Starter Kit
- * Copyright (c) 2026 Augusto Polonio
- * Licensed under MIT License
- * 
- * Main entry point for the application
- */
-
-import { inject } from '@vercel/analytics';
+import * as THREE from 'three';
 
 import { Scene } from './core/Scene.js';
 import { Camera } from './core/Camera.js';
 import { Renderer } from './core/Renderer.js';
 import { Player } from './core/Player.js';
 import { Game } from './core/Game.js';
-
-import { LightManager } from './lighting/LightManager.js';
-import { SkyboxManager } from './skybox/SkyboxManager.js';
-
 import { InputManager } from './input/InputManager.js';
 import { PointerLock } from './input/PointerLock.js';
+import { PlayCentreTest } from './environment/PlayCentreTest.js';
+import { TestHUD } from './ui/TestHUD.js';
+import { EYE_HEIGHT } from './utils/Constants.js';
 
-import { ModelLoader } from './models/ModelLoader.js';
+// Keep the starter-kit camera, renderer, input, and movement systems;
+// replace its outdoor demo contents with the first indoor test space.
+const sceneContainer = new Scene();
+const threeScene = sceneContainer.getScene();
+threeScene.clear();
+threeScene.background = new THREE.Color(0x12171b);
+threeScene.fog = new THREE.Fog(0x12171b, 24, 52);
 
-import { GUIManager } from './gui/GUIManager.js';
-import { UIManager } from './ui/UIManager.js';
-
-import { DebugManager } from './debug/DebugManager.js';
-import { CONFIG } from './config.js';
-
-// Initialize Vercel Analytics
-inject();
-
-// Initialize DebugManager with config
-DebugManager.getInstance();
-DebugManager.initialize(CONFIG);
-
-// Initialize core systems
-const scene = new Scene();
 const camera = new Camera();
+camera.getCamera().position.set(0, EYE_HEIGHT, 12);
+camera.getCamera().lookAt(-4.5, EYE_HEIGHT, -4);
+
 const renderer = new Renderer();
+const webglRenderer = renderer.getRenderer();
+webglRenderer.shadowMap.enabled = true;
+webglRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
+webglRenderer.toneMapping = THREE.ACESFilmicToneMapping;
+webglRenderer.toneMappingExposure = 1.0;
 
-// Get THREE scene (for shadow access)
-const threeScene = scene.getScene();
-renderer.getRenderer().scene = threeScene;
-
-// Initialize subsystems
-const lightManager = new LightManager(threeScene);
-const skyboxManager = new SkyboxManager(threeScene);
 const inputManager = new InputManager();
-const pointerLock = new PointerLock(renderer.getRenderer());
-
-// Initialize player
+const pointerLock = new PointerLock(webglRenderer);
 const player = new Player(camera.getCamera(), inputManager, pointerLock);
+const hud = new TestHUD(pointerLock);
+const environment = new PlayCentreTest(threeScene);
+const game = new Game(threeScene, camera.getCamera(), webglRenderer, player, environment, hud);
 
-// Initialize GUI
-const guiManager = new GUIManager(player, lightManager, skyboxManager, renderer.getRenderer());
-
-// Initialize UI (top bar + preset panel)
-const uiManager = new UIManager(guiManager);
-
-// Setup shadow camera access for ShadowGUI
-renderer.getRenderer().scene = threeScene;
-
-// Load models
-const modelLoader = new ModelLoader(threeScene);
-
-async function loadModels() {
-  try {
-    await modelLoader.loadModel('/models/kenney_mini-forest_1.0/tree-high.glb', { scale: 2 });
-    await modelLoader.loadModel('/models/kenney_mini-forest_1.0/tree.glb', {
-      position: [5, 0, -3],
-      rotation: [0, 45, 0],
-      scale: 2,
-    });
-    await modelLoader.loadModel('/models/kenney_mini-forest_1.0/tree.glb', {
-      position: [2, 0, -5],
-      rotation: [0, 31, 0],
-      scale: 2,
-    });
-    await modelLoader.loadModel('/models/kenney_mini-forest_1.0/tree.glb', {
-      position: [6, 0, -7],
-      rotation: [0, 56, 0],
-      scale: 2,
-    });
-    await modelLoader.loadModel('/models/kenney_mini-forest_1.0/tree.glb', {
-      position: [7, 0, -10],
-      rotation: [0, 12, 0],
-      scale: 2,
-    });
-    await modelLoader.loadModel('/models/kenney_mini-forest_1.0/tree.glb', {
-      position: [15, 0, -15],
-      rotation: [0, 21, 0],
-      scale: 2,
-    });
-    await modelLoader.loadModel('/models/kenney_mini-forest_1.0/tree.glb', {
-      position: [2, 0, -20],
-      rotation: [0, 11, 0],
-      scale: 2,
-    });
-    await modelLoader.loadModel('/models/kenney_mini-forest_1.0/tree.glb', {
-      position: [-10, 0, -20],
-      rotation: [0, 11, 0],
-      scale: 2,
-    });
-    await modelLoader.loadModel('/models/kenney_mini-forest_1.0/tree.glb', {
-      position: [-7, 0, -15],
-      rotation: [0, 11, 0],
-      scale: 2,
-    });
-    await modelLoader.loadModel('/models/kenney_mini-forest_1.0/tree.glb', {
-      position: [-10, 0, -10],
-      rotation: [0, 11, 0],
-      scale: 2,
-    });
-    await modelLoader.loadModel('/models/kenney_mini-forest_1.0/tree.glb', {
-      position: [-3, 0, -5],
-      rotation: [0, 11, 0],
-      scale: 2,
-    });
-  } catch (error) {
-    DebugManager.error('ModelLoader', 'Failed to load models:', error);
+document.addEventListener('keydown', (event) => {
+  if (event.code === 'KeyE' && !event.repeat && pointerLock.isPointerLocked()) {
+    event.preventDefault();
+    environment.interact(camera.getCamera().position, hud);
   }
-}
 
-// Setup window resize
-window.addEventListener('resize', () => {
-  camera.onWindowResize();
-  renderer.onWindowResize();
+  if (event.code === 'KeyR' && environment.complete) {
+    window.location.reload();
+  }
 });
 
-// Initialize game
-const game = new Game(threeScene, camera.getCamera(), renderer.getRenderer(), player);
-
-// Initialize application
 async function init() {
   try {
-    DebugManager.log('Main', 'Starting initialization...');
-    
-    // Load skybox first
-    DebugManager.log('Main', 'Loading skybox...');
-    await skyboxManager.loadSkybox('/skyboxes/skybox-day.png');
-    DebugManager.log('Main', 'Skybox loaded successfully');
-    
-    // Apply preset to setup lights and skybox offset
-    await new Promise(resolve => {
-      setTimeout(() => {
-        DebugManager.log('Main', 'Applying balanced preset...');
-        guiManager.getLightingGUI().applyPreset('balanced');
-        DebugManager.log('Main', 'Preset applied');
-        resolve();
-      }, 50);
-    });
-    
-    // Load models
-    DebugManager.log('Main', 'Loading models...');
-    await loadModels();
-    DebugManager.log('Main', 'Models loaded');
-    
-    // Start game
-    DebugManager.log('Main', 'Starting game...');
+    console.info('[Main] Building first play-centre test...');
+    await environment.build();
+    player.setCollisionBoxes(environment.getCollisionBoxes());
     game.start();
-    DebugManager.log('Main', 'Game started');
+    console.info('[Main] First test ready.');
   } catch (error) {
-    DebugManager.error('Main', 'Initialization failed:', error);
+    console.error('[Main] Test environment failed to initialize:', error);
+    hud.showMessage('The test area could not finish loading. Check the browser console.');
+    game.start();
   }
 }
 
-// Start the application
-DebugManager.log('Main', 'App initialization triggered');
 init();
