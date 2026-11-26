@@ -439,7 +439,7 @@ export class PlayCentreTest {
     this.exitGate = this.addBox('Front exit gate', 4.4, 3.1, 0.28, 0, 1.55, 15.7,
       new THREE.MeshStandardMaterial({ color: 0x343b3e, roughness: 0.8 }), true);
     this.exitGateCollisionIndex = this.collisionBoxes.length - 1;
-    this.interactables.push({ id: 'exit', label: 'Use the front exit', x: 0, z: 13.7, radius: 2.2 });
+    this.interactables.push({ id: 'exit', label: 'Use the front exit', x: 0, z: 14.2, radius: 1.4 });
 
     this.hideSpots = [
       { name: 'maintenance alcove', x: -18.6, z: -5.8, radius: 1.7 },
