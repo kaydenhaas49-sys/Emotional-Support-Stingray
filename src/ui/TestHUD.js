@@ -38,15 +38,13 @@ export class TestHUD {
     this.root = document.createElement('div');
     this.root.id = 'test-hud';
     this.root.innerHTML = [
-      '<div class="hud-top"><div class="eyebrow">PLAY CENTRE // AFTER-HOURS TEST</div><div id="hud-objective" class="objective">Objective: Check the reception desk for a maintenance note.</div></div>',
+      '<div class="hud-top"><div id="hud-objective" class="objective">Objective: Check the reception desk for a maintenance note.</div></div>',
       '<div class="crosshair"></div>',
       '<div id="hud-hint" class="hint"></div>',
       '<div id="hud-message" class="message"></div>',
       '<div class="controls">W A S D  MOVE<br>SHIFT  RUN &nbsp; • &nbsp; E  INTERACT &nbsp; • &nbsp; ESC  PAUSE</div>',
       '<section id="hud-overlay" class="overlay visible"><div class="card">',
-      '<div class="eyebrow">SITE 04 // INITIAL ENVIRONMENT TEST</div>',
-      '<h1>PLAY CENTRE</h1>',
-      '<p>This is an early greybox test. Explore the abandoned play area, find the maintenance note at reception, then restore power at panel 04 in the staff corridor.</p>',
+      '<p>Find the maintenance note, collect three relays, repeat the lamp sequence at panel 04, then return to the front exit.</p>',
       '<p class="small">WASD TO MOVE · MOUSE TO LOOK · SHIFT TO RUN · E TO INTERACT</p>',
       '<button id="hud-start" class="start-button" type="button">ENTER TEST</button>',
       '</div></section>'

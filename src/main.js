@@ -40,7 +40,14 @@ const game = new Game(threeScene, camera.getCamera(), webglRenderer, player, env
 document.addEventListener('keydown', (event) => {
   if (event.code === 'KeyE' && !event.repeat && pointerLock.isPointerLocked()) {
     event.preventDefault();
-    environment.interact(camera.getCamera().position, hud);
+    const position = camera.getCamera().position;
+    if (player.hidden) {
+      environment.toggleHide(position, hud, player);
+    } else if (environment.getNearbyInteractable(position)) {
+      environment.interact(position, hud);
+    } else if (!environment.toggleHide(position, hud, player)) {
+      environment.interact(position, hud);
+    }
   }
 
   if (event.code === 'KeyR' && environment.complete) {

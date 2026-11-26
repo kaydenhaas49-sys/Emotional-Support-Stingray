@@ -23,6 +23,7 @@ export class Player {
     this.velocity = new THREE.Vector3();
     this.collisionBoxes = [];
     this.collisionRadius = 0.32;
+    this.hidden = false;
     this.setupMouseLook();
   }
 
@@ -54,7 +55,7 @@ export class Player {
   }
 
   update(delta) {
-    if (!this.pointerLock.isPointerLocked()) return;
+    if (!this.pointerLock.isPointerLocked() || this.hidden) return;
     const keys = this.inputManager.getKeys();
     this.direction.set(0, 0, 0);
 
@@ -93,6 +94,10 @@ export class Player {
     }
 
     this.camera.position.y = EYE_HEIGHT;
+  }
+
+  setHidden(hidden) {
+    this.hidden = Boolean(hidden);
   }
 
   getSettings() {
