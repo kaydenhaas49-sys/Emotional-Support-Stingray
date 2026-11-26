@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { Attendant } from '../characters/Attendant.js';
+import { EYE_HEIGHT } from '../utils/Constants.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 const ASSET_ROOT = `${import.meta.env.BASE_URL}assets/textures/`;
@@ -16,6 +18,15 @@ export class PlayCentreTest {
     this.complete = false;
     this.indicator = null;
     this.modelLoaded = false;
+    this.relayCount = 0;
+    this.puzzleOrder = [2, 0, 1];
+    this.puzzleProgress = 0;
+    this.exitUnlocked = false;
+    this.hiddenSpot = null;
+    this.caught = false;
+    this.noiseCooldown = 0;
+    this.clueTime = 0;
+    this.playerStart = new THREE.Vector3(0, EYE_HEIGHT, 12);
   }
 
   async build() {
@@ -26,6 +37,7 @@ export class PlayCentreTest {
     this.buildLighting();
     await this.loadSoftPlayModel();
     this.buildDecor(materials);
+    this.buildStealthGameplay(materials);
     return this;
   }
 
@@ -216,7 +228,7 @@ export class PlayCentreTest {
 
     const noteMaterial = new THREE.MeshBasicMaterial({
       map: this.makeCanvasLabel(
-        ['MAINTENANCE NOTE', 'STAFF CORRIDOR: PANEL 04', 'Restore power after inspection'],
+        ['MAINTENANCE NOTE', 'FIND THREE RELAYS', 'FOLLOW THE LAMP ORDER'],
         '#d8d0b9',
         '#34312b'
       ),
@@ -376,25 +388,128 @@ export class PlayCentreTest {
     }));
   }
 
+  buildStealthGameplay(materials) {
+    this.interactables = this.interactables.filter((item) => item.id === 'note');
+    const colors = [0x61c4d7, 0xdca759, 0x88c978];
+    const names = ['blue', 'amber', 'green'];
+    const relayPositions = [[-16.5, 9.5], [7.5, -8.5], [-17.5, -10.5]];
+    this.relays = relayPositions.map(([x, z], index) => {
+      const material = new THREE.MeshStandardMaterial({
+        color: colors[index], emissive: colors[index], emissiveIntensity: 0.7,
+        roughness: 0.36, metalness: 0.3
+      });
+      const mesh = new THREE.Mesh(new THREE.OctahedronGeometry(0.25, 0), material);
+      mesh.position.set(x, 0.55, z);
+      mesh.castShadow = true;
+      this.scene.add(mesh);
+      this.interactables.push({ id: 'relay-' + index, label: 'Collect relay', x, z, radius: 1.7, mesh });
+      return mesh;
+    });
+
+    this.puzzleOrder = [2, 0, 1];
+    this.puzzleProgress = 0;
+    this.clueLamps = [];
+    [-1.1, 0, 1.1].forEach((x, index) => {
+      const material = new THREE.MeshStandardMaterial({
+        color: colors[index], emissive: colors[index], emissiveIntensity: 0.08, roughness: 0.3
+      });
+      const globe = new THREE.Mesh(new THREE.SphereGeometry(0.16, 14, 10), material);
+      globe.position.set(x, 3.8, 14.8);
+      this.scene.add(globe);
+      const light = new THREE.PointLight(colors[index], 0.04, 4, 2);
+      light.position.copy(globe.position);
+      this.scene.add(light);
+      this.clueLamps.push({ globe, light });
+    });
+
+    this.panelSwitches = [];
+    [12.55, 14, 15.45].forEach((x, index) => {
+      const material = new THREE.MeshStandardMaterial({
+        color: colors[index], emissive: colors[index], emissiveIntensity: 0.2, roughness: 0.38
+      });
+      const button = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.34, 0.16), material);
+      button.position.set(x, 1.85, -24.9);
+      button.castShadow = true;
+      this.scene.add(button);
+      this.panelSwitches.push(button);
+      this.interactables.push({ id: 'switch-' + index, label: 'Use ' + names[index] + ' switch', x, z: -24.4, radius: 0.72, mesh: button });
+    });
+
+    this.exitGate = this.addBox('Front exit gate', 4.4, 3.1, 0.28, 0, 1.55, 15.7,
+      new THREE.MeshStandardMaterial({ color: 0x343b3e, roughness: 0.8 }), true);
+    this.exitGateCollisionIndex = this.collisionBoxes.length - 1;
+    this.interactables.push({ id: 'exit', label: 'Use the front exit', x: 0, z: 13.7, radius: 2.2 });
+
+    this.hideSpots = [
+      { name: 'maintenance alcove', x: -18.6, z: -5.8, radius: 1.7 },
+      { name: 'play tunnel', x: 5.5, z: -8.5, radius: 1.7 }
+    ];
+    const cover = new THREE.MeshStandardMaterial({ color: 0x3b4141, roughness: 0.95 });
+    this.addBox('Alcove side cover', 0.18, 2.2, 2.0, -19.5, 1.1, -5.5, cover, true);
+    this.addBox('Alcove rear cover', 2.0, 2.2, 0.18, -18.5, 1.1, -6.55, cover, true);
+    this.addBox('Alcove privacy screen', 1.0, 2.2, 0.18, -17.75, 1.1, -4.45, cover, true);
+    this.addBox('Tunnel side cover', 0.22, 2.0, 2.5, 6.75, 1.0, -8.5, cover, true);
+    this.addBox('Tunnel rear cover', 2.0, 2.0, 0.22, 5.6, 1.0, -9.65, cover, true);
+    this.addBox('Tunnel privacy screen', 1.15, 2.0, 0.2, 4.9, 1.0, -7.35, cover, true);
+
+    this.attendant = new Attendant(this.scene, {
+      patrolPoints: [
+        { x: -18, z: 10 }, { x: -18, z: -12 }, { x: 8, z: -12 },
+        { x: 14, z: -12 }, { x: 14, z: -16 }, { x: 14, z: -24 },
+        { x: 14, z: -16 }, { x: 14, z: -12 }, { x: 18, z: -12 },
+        { x: 18, z: 12 }, { x: -18, z: 12 }
+      ],
+      onCaught: () => { this.caught = true; }
+    });
+  }
+
   getCollisionBoxes() {
     return this.collisionBoxes;
   }
 
-  getNearbyInteractable(position) {
-    let closest = null;
-    let closestDistance = Infinity;
+  getNearbyHideSpot(position) {
+    if (this.hiddenSpot) return this.hiddenSpot;
+    return this.hideSpots.find((spot) => {
+      const dx = position.x - spot.x, dz = position.z - spot.z;
+      return Math.sqrt(dx * dx + dz * dz) <= spot.radius;
+    }) || null;
+  }
 
+  toggleHide(position, hud, player) {
+    if (this.hiddenSpot) {
+      this.hiddenSpot = null;
+      player.setHidden(false);
+      player.camera.position.y = EYE_HEIGHT;
+      hud.showMessage('You leave the hiding place.');
+      return true;
+    }
+    const spot = this.getNearbyHideSpot(position);
+    if (!spot) return false;
+    this.hiddenSpot = spot;
+    player.setHidden(true);
+    player.camera.position.set(spot.x, EYE_HEIGHT, spot.z);
+    hud.showMessage('Hidden in the ' + spot.name + '.');
+    return true;
+  }
+
+  getNearbyInteractable(position) {
+    let closest = null, closestDistance = Infinity;
     for (const item of this.interactables) {
-      const dx = position.x - item.x;
-      const dz = position.z - item.z;
+      const dx = position.x - item.x, dz = position.z - item.z;
       const distance = Math.sqrt(dx * dx + dz * dz);
       if (distance <= item.radius && distance < closestDistance) {
         closest = item;
         closestDistance = distance;
       }
     }
-
     return closest;
+  }
+
+  removeExitGate() {
+    if (!this.exitGate) return;
+    this.scene.remove(this.exitGate);
+    this.collisionBoxes.splice(this.exitGateCollisionIndex, 1);
+    this.exitGate = null;
   }
 
   interact(position, hud) {
@@ -403,49 +518,124 @@ export class PlayCentreTest {
       hud.showMessage('Nothing nearby to interact with.');
       return;
     }
-
     if (target.id === 'note') {
       this.noteRead = true;
-      hud.setObjective('Reach the staff corridor and restore power at panel 04.');
-      hud.showMessage('The note points to the breaker at the end of the staff corridor.');
+      hud.setObjective('Find three relays. Repeat the light sequence at panel 04, then return to the front exit.');
+      hud.showMessage('The ceiling lamps show the switch order.');
       return;
     }
-
-    if (target.id === 'breaker') {
-      if (!this.noteRead) {
-        hud.showMessage('The panel is labelled 04. Check the reception desk first.');
+    if (target.id.startsWith('relay-')) {
+      if (!target.mesh || !target.mesh.parent) return;
+      this.scene.remove(target.mesh);
+      target.mesh.geometry.dispose();
+      target.mesh.material.dispose();
+      target.mesh = null;
+      this.relayCount += 1;
+      hud.setObjective(this.relayCount < 3
+        ? 'Find the remaining power relays (' + this.relayCount + '/3).'
+        : 'Repeat the light sequence at panel 04.');
+      hud.showMessage('Relay collected (' + this.relayCount + '/3).');
+      return;
+    }
+    if (target.id.startsWith('switch-')) {
+      if (this.relayCount < 3) {
+        hud.showMessage('The panel needs all three relays.');
         return;
       }
-
+      if (this.exitUnlocked) {
+        hud.showMessage('Panel 04 is powered.');
+        return;
+      }
+      const index = Number(target.id.slice('switch-'.length));
+      if (index === this.puzzleOrder[this.puzzleProgress]) {
+        this.panelSwitches[index].material.emissiveIntensity = 1.2;
+        this.puzzleProgress += 1;
+        if (this.puzzleProgress === this.puzzleOrder.length) {
+          this.exitUnlocked = true;
+          this.indicator.material.color.set(0x62d88a);
+          this.indicator.material.emissive.set(0x1a8a45);
+          this.panelLight.color.set(0x62d88a);
+          this.panelLight.intensity = 10;
+          this.removeExitGate();
+          hud.setObjective('Power restored. Return to the front exit.');
+          hud.showMessage('Panel 04 is powered. The exit is unlocked.');
+        } else {
+          hud.showMessage('Switch set.');
+        }
+      } else {
+        this.puzzleProgress = 0;
+        this.panelSwitches.forEach((button) => { button.material.emissiveIntensity = 0.2; });
+        this.attendant.reportNoise(position, 18);
+        hud.showMessage('Wrong sequence. The panel resets.');
+      }
+      return;
+    }
+    if (target.id === 'exit') {
+      if (!this.exitUnlocked) {
+        hud.showMessage('The exit is locked. Restore power at panel 04.');
+        return;
+      }
       this.complete = true;
-      this.indicator.material.color.set(0x62d88a);
-      this.indicator.material.emissive.set(0x1a8a45);
-      this.panelLight.color.set(0x62d88a);
-      this.panelLight.intensity = 10;
-      hud.setObjective('TEST COMPLETE — POWER RESTORED');
-      hud.setHint('Press R to restart the test.');
-      hud.showMessage('Panel 04 restored. The first test area is complete.');
+      hud.setObjective('You escaped.');
+      hud.setHint('Press R to restart.');
+      hud.showMessage('The front exit opens.');
     }
   }
 
   update(delta, player, hud) {
     this.time += delta;
-
+    this.clueTime += delta;
     this.lights.forEach((entry) => {
       const breathing = 1 + Math.sin(this.time * 1.4 + entry.phase) * 0.035;
       const flicker = entry.flickers && Math.sin(this.time * 19 + entry.phase) > 0.985 ? 0.12 : 1;
       entry.light.intensity = entry.intensity * breathing * flicker;
     });
 
-    if (!hud || !player) return;
+    const cycle = this.clueTime % 3.4;
+    const activeIndex = cycle < 2.4 ? this.puzzleOrder[Math.floor(cycle / 0.8)] : -1;
+    this.clueLamps.forEach((lamp, index) => {
+      const active = index === activeIndex;
+      lamp.globe.material.emissiveIntensity = active ? 1.7 : 0.08;
+      lamp.light.intensity = active ? 2.2 : 0.04;
+    });
 
-    const target = this.getNearbyInteractable(player.camera.position);
+    if (!player) return;
+    const position = player.camera.position;
+    this.noiseCooldown = Math.max(0, this.noiseCooldown - delta);
+    const keys = player.inputManager.getKeys();
+    if (!player.hidden && keys.sprint && player.inputManager.isMoving() && this.noiseCooldown === 0) {
+      this.attendant.reportNoise(position, 9);
+      this.noiseCooldown = 1.4;
+    }
+    this.attendant.update(delta, position, player.hidden);
+
+    if (this.caught) {
+      this.caught = false;
+      this.hiddenSpot = null;
+      player.setHidden(false);
+      player.camera.position.copy(this.playerStart);
+      player.camera.lookAt(-4.5, EYE_HEIGHT, -4);
+      this.attendant.reset({ x: this.playerStart.x, z: this.playerStart.z });
+      if (hud) {
+        hud.setObjective(this.relayCount < 3
+          ? 'Find three relays (' + this.relayCount + '/3).'
+          : this.exitUnlocked
+            ? 'Power restored. Return to the front exit.'
+            : 'Repeat the light sequence at panel 04.');
+        hud.showMessage('The attendant found you. You return to the entrance.');
+      }
+    }
+
+    if (!hud) return;
     if (this.complete) {
-      hud.setHint('Press R to restart the test.');
-    } else if (target) {
-      hud.setHint('E  —  ' + target.label);
+      hud.setHint('Press R to restart.');
+    } else if (player.hidden) {
+      hud.setHint('E  —  Leave hiding place');
     } else {
-      hud.setHint('');
+      const target = this.getNearbyInteractable(position);
+      const hideSpot = this.getNearbyHideSpot(position);
+      hud.setHint(hideSpot ? 'E  —  Hide in the ' + hideSpot.name : target ? 'E  —  ' + target.label : '');
     }
   }
+
 }
