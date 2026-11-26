@@ -1,6 +1,6 @@
 # Roadmap
 
-This roadmap is intentionally prototype-first. Finish each stage with something playable or verifiable before expanding scope.
+This roadmap is prototype-first. Finish each stage with something playable or verifiable before expanding scope.
 
 ## Stage 0 — Repository and asset foundation
 - [x] Preserve the Three.js/Vite first-person starter.
@@ -14,8 +14,9 @@ This roadmap is intentionally prototype-first. Finish each stage with something 
 - [x] Replace the forest demo startup with an indoor play-centre greybox.
 - [x] Establish a main play room, front entrance, and staff-only corridor.
 - [x] Add basic first-person collision for room walls and the reception counter.
-- [x] Add a maintenance-note and breaker-panel interaction loop.
-- [x] Define a start point and a simple end condition.
+- [x] Add a relay collection and visual breaker-sequence puzzle.
+- [x] Add hiding spots and an original attendant encounter.
+- [x] Define a start point, checkpoint after being caught, and exit condition.
 - [ ] Review scale, navigation, and imported model placement in the browser.
 - [ ] Add collision against the play structure and remaining large props.
 
@@ -26,15 +27,14 @@ This roadmap is intentionally prototype-first. Finish each stage with something 
 - [ ] Tune lighting, fog, and material tiling after browser review.
 
 ## Stage 3 — Original attendants
-- [ ] Define original silhouettes and visual language.
+- [ ] Refine the attendant silhouette and visual language.
 - [ ] Retarget and test suitable idle, walk, run, and interaction animations.
-- [ ] Implement readable perception and state logic.
-- [ ] Test navigation around obstacles and through narrow play structures.
+- [ ] Improve perception, search behavior, and navigation around obstacles.
 
 ## Stage 4 — Polish and evaluation
 - [ ] Replace placeholders with original or properly licensed assets.
 - [ ] Improve animation blending, audio, lighting, and performance.
-- [ ] Test the complete first playable slice from start to finish.
+- [ ] Review the complete first playable slice from start to finish.
 - [ ] Decide whether the concept is worth expanding.
 
 ## Scope guard
