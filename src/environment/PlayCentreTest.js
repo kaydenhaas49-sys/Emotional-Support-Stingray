@@ -579,7 +579,9 @@ export class PlayCentreTest {
         }
       } else {
         this.puzzleProgress = 0;
-        this.panelSwitches.forEach((button) => { button.material.emissiveIntensity = 0.2; });
+        this.panelSwitches.forEach((button) => {
+          if (button && button.material) button.material.emissiveIntensity = 0.2;
+        });
         this.attendant.reportNoise(position, 18);
         hud.showMessage('Wrong sequence. The panel resets.');
       }
