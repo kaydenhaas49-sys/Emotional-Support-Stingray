@@ -23,6 +23,7 @@ export class PlayCentreTest {
     this.puzzleProgress = 0;
     this.exitUnlocked = false;
     this.hiddenSpot = null;
+    this.hideReturnPosition = null;
     this.caught = false;
     this.noiseCooldown = 0;
     this.clueTime = 0;
@@ -479,13 +480,16 @@ export class PlayCentreTest {
     if (this.hiddenSpot) {
       this.hiddenSpot = null;
       player.setHidden(false);
+      if (this.hideReturnPosition) player.camera.position.copy(this.hideReturnPosition);
       player.camera.position.y = EYE_HEIGHT;
+      this.hideReturnPosition = null;
       hud.showMessage('You leave the hiding place.');
       return true;
     }
     const spot = this.getNearbyHideSpot(position);
     if (!spot) return false;
     this.hiddenSpot = spot;
+    this.hideReturnPosition = player.camera.position.clone();
     player.setHidden(true);
     player.camera.position.set(spot.x, EYE_HEIGHT, spot.z);
     hud.showMessage('Hidden in the ' + spot.name + '.');
@@ -607,11 +611,12 @@ export class PlayCentreTest {
       this.attendant.reportNoise(position, 9);
       this.noiseCooldown = 1.4;
     }
-    if (!this.complete) this.attendant.update(delta, position, player.hidden);
+    if (!this.complete && player.pointerLock.isPointerLocked()) this.attendant.update(delta, position, player.hidden);
 
     if (this.caught) {
       this.caught = false;
       this.hiddenSpot = null;
+      this.hideReturnPosition = null;
       player.setHidden(false);
       player.camera.position.copy(this.playerStart);
       player.camera.lookAt(-4.5, EYE_HEIGHT, -4);
