@@ -36,7 +36,7 @@ This file records the provenance of assets currently present in the repository. 
 
 - **Runtime model:** `public/assets/environment/soft-play/model.glb` (the uploaded root `model.glb`, moved into the environment folder).
 - **Source pack reference:** [Trampoline Park and Soft Play pack](https://3dassets.dev/packs/trampoline-park-and-soft-play). Confirm the exact pack licence/attribution against the downloaded source before release; do not assume the model's licence from its filename alone.
-- **Damaged plaster and concrete textures:** [Poly Haven](https://polyhaven.com/). Not currently present in this repository.
+- **Damaged plaster and concrete textures:** [Poly Haven](https://polyhaven.com/). Imported; 2K maps are stored under `public/assets/textures/`.
 
 Do not mark planned assets as imported until the files and their licence information have actually been added.
 
