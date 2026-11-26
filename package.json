@@ -1,0 +1,37 @@
+{
+  "name": "first-person-starter-kit",
+  "version": "1.0.0",
+  "description": "A simple first-person controller built with Three.js and Vite",
+  "private": false,
+  "type": "module",
+  "author": "Augusto Polonio",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/augustopolonio/first-person-starter-kit"
+  },
+  "homepage": "https://github.com/augustopolonio/first-person-starter-kit",
+  "keywords": [
+    "threejs",
+    "first-person",
+    "vite",
+    "webgl",
+    "3d",
+    "game",
+    "fps",
+    "starter-kit"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@vercel/analytics": "^2.0.1",
+    "lil-gui": "^0.21.0",
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0"
+  }
+}
