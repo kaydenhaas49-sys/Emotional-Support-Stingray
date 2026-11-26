@@ -501,6 +501,7 @@ export class PlayCentreTest {
     for (const item of this.interactables) {
       const dx = position.x - item.x, dz = position.z - item.z;
       const distance = Math.sqrt(dx * dx + dz * dz);
+      if ((item.id.startsWith('relay-') || item.id.startsWith('switch-')) && (!item.mesh || !item.mesh.parent)) continue;
       if (distance <= item.radius && distance < closestDistance) {
         closest = item;
         closestDistance = distance;
@@ -534,6 +535,7 @@ export class PlayCentreTest {
       target.mesh.geometry.dispose();
       target.mesh.material.dispose();
       target.mesh = null;
+      this.interactables = this.interactables.filter((item) => item !== target);
       this.relayCount += 1;
       hud.setObjective(this.relayCount < 3
         ? 'Find the remaining power relays (' + this.relayCount + '/3).'
@@ -551,15 +553,24 @@ export class PlayCentreTest {
         return;
       }
       const index = Number(target.id.slice('switch-'.length));
+      const button = this.panelSwitches[index];
+      if (!button || !button.material) {
+        hud.showMessage('Panel switch unavailable.');
+        return;
+      }
       if (index === this.puzzleOrder[this.puzzleProgress]) {
-        this.panelSwitches[index].material.emissiveIntensity = 1.2;
+        button.material.emissiveIntensity = 1.2;
         this.puzzleProgress += 1;
         if (this.puzzleProgress === this.puzzleOrder.length) {
           this.exitUnlocked = true;
-          this.indicator.material.color.set(0x62d88a);
-          this.indicator.material.emissive.set(0x1a8a45);
-          this.panelLight.color.set(0x62d88a);
-          this.panelLight.intensity = 10;
+          if (this.indicator && this.indicator.material) {
+            this.indicator.material.color.set(0x62d88a);
+            this.indicator.material.emissive.set(0x1a8a45);
+          }
+          if (this.panelLight) {
+            this.panelLight.color.set(0x62d88a);
+            this.panelLight.intensity = 10;
+          }
           this.removeExitGate();
           hud.setObjective('Power restored. Return to the front exit.');
           hud.showMessage('Panel 04 is powered. The exit is unlocked.');
