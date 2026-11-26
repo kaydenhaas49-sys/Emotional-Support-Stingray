@@ -32,9 +32,10 @@ This file records the provenance of assets currently present in the repository. 
 - **Kenney Mini Forest:** credited as CC0 in the upstream starter-kit acknowledgments; retained for testing only under `public/models/kenney_mini-forest_1.0/`.
 - **Skyboxes:** credited to Kenney in the upstream starter-kit acknowledgments; retained under `public/skyboxes/`.
 
-## Planned, not yet imported
+## Soft-play environment scene
 
-- **Trampoline Park and Soft Play pack:** [3DAssets.dev](https://3dassets.dev/packs/trampoline-park-and-soft-play). Not currently present in this repository.
+- **Runtime model:** `public/assets/environment/soft-play/model.glb` (the uploaded root `model.glb`, moved into the environment folder).
+- **Source pack reference:** [Trampoline Park and Soft Play pack](https://3dassets.dev/packs/trampoline-park-and-soft-play). Confirm the exact pack licence/attribution against the downloaded source before release; do not assume the model's licence from its filename alone.
 - **Damaged plaster and concrete textures:** [Poly Haven](https://polyhaven.com/). Not currently present in this repository.
 
 Do not mark planned assets as imported until the files and their licence information have actually been added.

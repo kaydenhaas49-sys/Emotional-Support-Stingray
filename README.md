@@ -75,6 +75,7 @@ docs/
 ## Asset handling
 
 - GLB files intended to load in the browser belong under `public/assets/`.
+- The uploaded soft-play environment scene is at `public/assets/environment/soft-play/model.glb`.
 - Blender, FBX, and OBJ source files belong under `assets/`.
 - Keep each asset pack's licence and attribution information with the pack or documented in [docs/ASSET_CREDITS.md](docs/ASSET_CREDITS.md).
 - The original starter-kit paths under `public/models/` and `public/skyboxes/` are intentionally unchanged so the current demo continues to load.
