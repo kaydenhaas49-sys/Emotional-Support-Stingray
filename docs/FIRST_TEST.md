@@ -1,38 +1,37 @@
 # First Play-Centre Test
 
-This is the first playable environment test, not a finished level.
+This is a short playable horror slice, not a finished level.
 
 ## What is in the test
 
-- An enclosed indoor play-centre room with a front entrance and a staff-only corridor.
-- The uploaded soft-play GLB, automatically fitted into the room using its imported bounds.
-- Concrete floor and damaged plaster materials using the imported Poly Haven 2K maps.
-- Dim overhead point lights with restrained flicker.
-- Reception counter, maintenance note, and breaker panel 04.
-- First-person WASD movement, mouse look, sprint, and basic axis-separated collision against the room walls and reception counter.
-- A small objective loop: inspect the note, reach the staff corridor, and interact with panel 04.
+- An enclosed indoor play-centre room with a front entrance and a staff corridor.
+- The fitted soft-play model, concrete floor, damaged plaster, and flickering overhead lights.
+- Three power relays to collect.
+- A three-lamp visual clue and matching breaker switches at panel 04.
+- A front exit that unlocks when the relays are collected and the light sequence is entered correctly.
+- An original geometric attendant that patrols, investigates noise and sightings, and searches its last known player position.
+- Two hiding places. The attendant can still catch the player if it reaches a hiding place during an active search.
+- Getting caught returns the player to the entrance; collected relays and puzzle progress remain.
 
 ## Controls
 
-- WASD: move
+- WASD or arrow keys: move
 - Mouse: look
-- Shift: run
-- E: interact
-- Escape: pause / release the mouse
-- R: restart after completing the test
+- Shift: sprint; sprinting makes noise
+- E: interact or hide/leave a hiding place
+- Escape: release the mouse
+- R: restart after escaping
 
 Click **Enter Test** to capture the mouse.
 
 ## Known limitations
 
-- This is a greybox slice. Room proportions, prop placement, lighting, and material tiling still need visual review in a browser.
-- Player collision currently covers the perimeter, staff corridor walls, and reception counter. The imported soft-play mesh is not yet used as a collision surface.
-- If the soft-play GLB cannot load, a simple primitive fallback is shown so the test can still start.
-- There is no attendant AI, save system, positional audio, or finished narrative in this test.
-- The model is fitted using its bounding box; final scale and orientation must be checked in the live browser and adjusted if the source asset has an unexpected pivot.
+- This is a greybox slice. Room proportions, prop placement, lighting, and material tiling still need review in a browser.
+- Attendant movement follows fixed waypoints and has no full navigation mesh; it may take imperfect paths around props.
+- Player collision covers walls, the reception counter, gate, and new cover objects, but not the imported soft-play mesh.
+- There is no positional audio, save system, combat, or finished narrative.
+- If the soft-play model cannot load, a simple primitive fallback is shown.
 
 ## Local run
 
 Run npm install, then npm run dev from the repository directory.
-
-The GitHub Pages workflow builds the Vite app and deploys the dist output on pushes to main. In repository Settings → Pages, choose **GitHub Actions** as the build and deployment source.
