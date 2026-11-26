@@ -607,7 +607,7 @@ export class PlayCentreTest {
     const position = player.camera.position;
     this.noiseCooldown = Math.max(0, this.noiseCooldown - delta);
     const keys = player.inputManager.getKeys();
-    if (!player.hidden && keys.sprint && player.inputManager.isMoving() && this.noiseCooldown === 0) {
+    if (player.pointerLock.isPointerLocked() && !player.hidden && keys.sprint && player.inputManager.isMoving() && this.noiseCooldown === 0) {
       this.attendant.reportNoise(position, 9);
       this.noiseCooldown = 1.4;
     }
