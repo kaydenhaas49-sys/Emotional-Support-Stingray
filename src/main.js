@@ -49,14 +49,18 @@ document.addEventListener('keydown', (event) => {
 });
 
 async function init() {
+  const bootStatus = document.getElementById('boot-status');
   try {
+    if (bootStatus) bootStatus.textContent = 'Building the play-centre scene…';
     console.info('[Main] Building first play-centre test...');
     await environment.build();
     player.setCollisionBoxes(environment.getCollisionBoxes());
     game.start();
+    if (bootStatus) bootStatus.remove();
     console.info('[Main] First test ready.');
   } catch (error) {
     console.error('[Main] Test environment failed to initialize:', error);
+    if (bootStatus) bootStatus.textContent = `The test could not finish loading: ${error.message || error}`;
     hud.showMessage('The test area could not finish loading. Check the browser console.');
     game.start();
   }

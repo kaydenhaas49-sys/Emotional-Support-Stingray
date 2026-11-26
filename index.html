@@ -6,15 +6,27 @@
   <meta name="theme-color" content="#12171b" />
   <meta name="description" content="An early first-person environment test in an abandoned indoor play centre." />
   <title>Play Centre — After-Hours Test</title>
-  <link rel="icon" type="image/png" href="/icon/cube_icon.png" />
+  <link rel="icon" type="image/png" href="./icon/cube_icon.png" />
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { width: 100%; height: 100%; overflow: hidden; background: #12171b; }
     body { cursor: crosshair; }
     canvas { display: block; width: 100%; height: 100%; }
+    #boot-status { position: fixed; z-index: 2000; inset: 0; display: grid; place-items: center; padding: 28px; background: #12171b; color: #e8e4d9; font: 14px/1.6 Arial, sans-serif; text-align: center; }
   </style>
 </head>
 <body>
-  <script type="module" src="/src/main.js"></script>
+  <div id="boot-status">Loading the play-centre test…</div>
+  <script>
+    window.addEventListener('error', (event) => {
+      const status = document.getElementById('boot-status');
+      if (status) status.textContent = 'Startup error: ' + (event.message || 'Unknown browser error') + '. Open the browser console for details.';
+    });
+    window.addEventListener('unhandledrejection', (event) => {
+      const status = document.getElementById('boot-status');
+      if (status) status.textContent = 'Startup error: ' + (event.reason?.message || event.reason || 'Unknown loading error') + '. Open the browser console for details.';
+    });
+  </script>
+  <script type="module" src="./src/main.js"></script>
 </body>
 </html>

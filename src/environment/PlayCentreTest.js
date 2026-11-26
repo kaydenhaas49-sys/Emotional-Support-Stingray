@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-const ASSET_ROOT = '/assets/textures/';
+const ASSET_ROOT = `${import.meta.env.BASE_URL}assets/textures/`;
 
 export class PlayCentreTest {
   constructor(scene) {
@@ -309,7 +309,7 @@ export class PlayCentreTest {
 
   async loadSoftPlayModel() {
     try {
-      const gltf = await this.modelLoader.loadAsync('/assets/environment/soft-play/model.glb');
+      const gltf = await this.modelLoader.loadAsync(`${import.meta.env.BASE_URL}assets/environment/soft-play/model.glb`);
       const model = gltf.scene;
       model.name = 'Soft-play environment asset';
       model.updateMatrixWorld(true);
