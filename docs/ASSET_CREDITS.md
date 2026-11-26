@@ -39,3 +39,9 @@ This file records the provenance of assets currently present in the repository. 
 - **Damaged plaster and concrete textures:** [Poly Haven](https://polyhaven.com/). Not currently present in this repository.
 
 Do not mark planned assets as imported until the files and their licence information have actually been added.
+
+
+## Poly Haven Textures
+
+- [Damaged Plaster](https://polyhaven.com/a/damaged_plaster) — Poly Haven, CC0.
+- [Concrete Floor 01](https://polyhaven.com/a/concrete_floor_01) — Poly Haven, CC0.
