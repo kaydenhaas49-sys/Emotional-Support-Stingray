@@ -121,6 +121,14 @@ export class PlayCentreTest {
     floor.receiveShadow = true;
     this.scene.add(floor);
 
+    // The staff corridor extends beyond the main room footprint.
+    const corridorFloor = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 10), materials.floor);
+    corridorFloor.name = 'Staff corridor concrete floor';
+    corridorFloor.rotation.x = -Math.PI / 2;
+    corridorFloor.position.set(14, 0, -21);
+    corridorFloor.receiveShadow = true;
+    this.scene.add(corridorFloor);
+
     this.addBox('Left perimeter wall', wallThickness, wallHeight, depth, -halfWidth, wallHeight / 2, 0, materials.wall, true);
     this.addBox('Right perimeter wall', wallThickness, wallHeight, depth, halfWidth, wallHeight / 2, 0, materials.wall, true);
 
