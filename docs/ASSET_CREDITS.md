@@ -1,6 +1,6 @@
 # Asset Credits and Licences
 
-This file records the provenance of assets currently present in the repository. Keep the original licence/readme files alongside source assets whenever possible. Re-check the source terms before adding new packs.
+This file records the provenance of assets currently used by the playable build. Keep original licence/readme information alongside editable source files.
 
 ## First-person starter kit
 
@@ -8,49 +8,19 @@ This file records the provenance of assets currently present in the repository. 
 - **Author:** Augusto Polonio
 - **Licence:** MIT (see the repository root `LICENSE`)
 - **Use:** Three.js/Vite application foundation and first-person controller.
-- The starter kit's existing code and demo assets are being retained as the technical base.
 
 ## Quaternius robot placeholder
 
 - **Creator:** Quaternius
 - **Source:** [Quaternius](https://quaternius.com/)
 - **Licence:** CC0 1.0 Universal (see `assets/characters/robot-placeholder/LICENSE.txt`)
-- **Use:** Prototype attendant character. The game loads the FBX at runtime, fits it to character height, and uses embedded idle/walk/run clips when available. It remains a placeholder pending a final character design.
+- **Use:** Prototype attendant character. The game loads the FBX at runtime and uses its available embedded idle/walk/run clips. It remains a placeholder pending a final character design.
 
-## KinemIQ / Quaternius animation pack
-
-- **Pack:** KinemIQ Free Animation Pack — 35 game animations
-- **Source:** [KinemIQ free game animations](https://kinemiq.app/free-game-animations/)
-- **Underlying motion library:** Quaternius Universal Animation Library
-- **Licence:** CC0 1.0, as stated in the included pack README.
-- **Changes:** Retargeted, cleaned, and exported by KinemIQ.
-- **Use:** Humanoid mannequin and animation clips for prototype tests. These are generic humanoid animations and may require retargeting or adjustment for the final robot rigs.
-- The original README is stored at `assets/animations/kinemiq/README.txt`.
-
-## Existing starter-kit demo assets
-
-- **Kenney Mini Forest:** credited as CC0 in the upstream starter-kit acknowledgments; retained for testing only under `public/models/kenney_mini-forest_1.0/`.
-- **Skyboxes:** credited to Kenney in the upstream starter-kit acknowledgments; retained under `public/skyboxes/`.
-
-## Soft-play environment scene
-
-- **Runtime model:** `public/assets/environment/soft-play/model.glb` (the uploaded root `model.glb`, moved into the environment folder).
-- **Source pack reference:** [Trampoline Park and Soft Play pack](https://3dassets.dev/packs/trampoline-park-and-soft-play). Confirm the exact pack licence/attribution against the downloaded source before release; do not assume the model's licence from its filename alone.
-- **Damaged plaster and concrete textures:** [Poly Haven](https://polyhaven.com/). Imported; 2K maps are stored under `public/assets/textures/`.
-
-Do not mark planned assets as imported until the files and their licence information have actually been added.
-
-
-## Poly Haven Textures
-
-- [Damaged Plaster](https://polyhaven.com/a/damaged_plaster) — Poly Haven, CC0.
-- [Concrete Floor 01](https://polyhaven.com/a/concrete_floor_01) — Poly Haven, CC0.
-
-
-## Archade preschool classroom source scene
+## Archade preschool classroom
 
 - **Source listing:** [Archade — Preschooler Classroom Education Scene](https://archade.app/marketplace/3d-models/interior-scenes/preschooler-classroom-education-scene-sketchup).
 - **Creator:** Eliad Dorfman / Archade marketplace.
 - **Licence:** Archade Free Licence supplied with the download. It permits personal and commercial project use, modification and adaptation, with no attribution requirement. It prohibits redistributing the asset as a standalone file or repackaging it as a library, template pack, bundle or dataset.
-- **Runtime asset:** `public/assets/environment/archade/classroom.glb`, optimized and adapted for this game; collision is generated from the original source geometry in `public/assets/environment/archade/collision.json`.
-- The editable `.skp` source is kept outside the public game repository.
+- **Runtime asset:** `public/assets/environment/archade/classroom.glb`, optimized and adapted for this game.
+- **Collision:** `public/assets/environment/archade/collision.json`, generated from the original, unsimplified SketchUp triangles.
+- The editable `.skp` source is kept outside this public game repository. The adapted classroom is part of the game and is not offered as a standalone asset download.
