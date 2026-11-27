@@ -65,6 +65,7 @@ if (!bounds || !bakedScene.glbPrimitives?.length || !instancedScene.meshResource
   throw new Error('The SketchUp file did not produce measurable render and collision geometry.');
 }
 const [minX, minY, minZ] = bounds.min;
+const [maxX, maxY, maxZ] = bounds.max;
 const [width, height, depth] = bounds.size;
 if (![width, height, depth].every((value) => Number.isFinite(value) && value > 0.1)) {
   throw new Error('The SketchUp scene reported invalid world-space metre bounds.');
