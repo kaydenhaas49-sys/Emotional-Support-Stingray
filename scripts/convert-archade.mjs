@@ -313,6 +313,14 @@ const probeX = (probe.minX + probe.maxX) / 2, probeZ = (probe.minZ + probe.maxZ)
 if (!isBlocked(probeX, probeZ)) throw new Error('Collision QA failed: generated AABBs do not block a player-sized probe.');
 const gameplayPoints = findSpacedPoints(spawn, 5);
 if (gameplayPoints.length < 5) throw new Error('Could not find five separated, collision-free floor points for relays and hiding places.');
+const reservedGameplayPoints = [spawn, ...gameplayPoints];
+const panelCandidates = walkableFloorPositions
+  .filter((candidate) => reservedGameplayPoints.every((point) =>
+    Math.hypot(candidate.x - point.x, candidate.z - point.z) >= 3.2
+  ))
+  .sort((a, b) => (a.x * a.x + a.z * a.z) - (b.x * b.x + b.z * b.z));
+const panelPosition = panelCandidates[0];
+if (!panelPosition) throw new Error('Could not find a clear floor location for the maintenance panel.');
 for (const box of collisionBoxes) {
   if (![box.minX, box.maxX, box.minZ, box.maxZ].every(Number.isFinite) || box.minX >= box.maxX || box.minZ >= box.maxZ) {
     throw new Error('Collision QA failed: invalid AABB coordinates.');
@@ -328,6 +336,7 @@ const collisionData = {
   spawn,
   qaProbe: { x: probeX, z: probeZ },
   points: {
+    panelPosition: { x: Number(panelPosition.x.toFixed(3)), z: Number(panelPosition.z.toFixed(3)) },
     relaySpawns: gameplayPoints.slice(0,3),
     hideSpots: [
       { name: 'activity alcove', ...gameplayPoints[3] },
@@ -366,11 +375,11 @@ try {
   console.info('[Archade pipeline] Optimizing geometry, textures, and GPU buffers...');
   const optimizeArgs = [
     'optimize', rawPath, outputPath,
-    '--instance', 'false', '--flatten', 'false', '--join', 'false', '--palette', 'false',
-    '--simplify', 'true', '--simplify-ratio', '0.5', '--simplify-error', '0.001',
+    '--instance', 'true', '--instance-min', '3', '--flatten', 'false', '--join', 'false', '--palette', 'false',
+    '--simplify', 'true', '--simplify-ratio', '0.32', '--simplify-error', '0.001',
     '--simplify-lock-border', 'true', '--weld', 'true',
     '--compress', 'meshopt', '--meshopt-level', 'high',
-    '--texture-compress', 'webp', '--texture-size', '1024'
+    '--texture-compress', 'webp', '--texture-size', '768'
   ];
   try {
     execFileSync(cliPath, optimizeArgs, { cwd: projectRoot, stdio: 'inherit', maxBuffer: 16 * 1024 * 1024 });

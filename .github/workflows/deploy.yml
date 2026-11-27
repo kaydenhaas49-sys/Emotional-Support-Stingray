@@ -37,7 +37,8 @@ jobs:
           if [ -s source-assets/archade/archade-classroom.skp ]; then
             npm run convert:archade
           else
-            echo "Using the checked-in optimized classroom GLB and collision file."
+            echo "Optimizing the checked-in Archade classroom GLB."
+            npm run optimize:runtime
           fi
       - name: Verify runtime collision grid
         run: npm run test:collision
@@ -48,6 +49,7 @@ jobs:
         with:
           path: ./dist
       - name: Store optimized runtime assets and remove raw source file
+        if: github.ref == 'refs/heads/main'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

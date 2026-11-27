@@ -26,7 +26,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "convert:archade": "node scripts/convert-archade.mjs --force",
-    "test:collision": "node scripts/qa-archade-collision.mjs"
+    "test:collision": "node scripts/qa-archade-collision.mjs",
+    "optimize:runtime": "node scripts/optimize-runtime.mjs"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",
