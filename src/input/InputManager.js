@@ -20,6 +20,19 @@ export class InputManager {
   setupEventListeners() {
     document.addEventListener('keydown', (event) => this.handleKey(event, true));
     document.addEventListener('keyup', (event) => this.handleKey(event, false));
+    document.addEventListener('pointerlockchange', () => {
+      if (!document.pointerLockElement) this.clearKeys();
+    });
+    window.addEventListener('blur', () => this.clearKeys());
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) this.clearKeys();
+    });
+  }
+
+  clearKeys() {
+    Object.keys(this.keys).forEach((key) => {
+      this.keys[key] = false;
+    });
   }
 
   handleKey(event, pressed) {

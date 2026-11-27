@@ -488,10 +488,15 @@ export class PlayCentreTest {
     }
     const spot = this.getNearbyHideSpot(position);
     if (!spot) return false;
+    // Preserve the attendant's knowledge if it saw the player entering cover.
+    const wasSeen = Boolean(this.attendant && (
+      this.attendant.playerVisible || this.attendant.canSeePlayer(position)
+    ));
     this.hiddenSpot = spot;
     this.hideReturnPosition = player.camera.position.clone();
     player.setHidden(true);
     player.camera.position.set(spot.x, EYE_HEIGHT, spot.z);
+    if (wasSeen) this.attendant.rememberHiddenPosition(spot);
     hud.showMessage('Hidden in the ' + spot.name + '.');
     return true;
   }

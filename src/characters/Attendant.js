@@ -15,6 +15,7 @@ export class Attendant {
     this.searchCenter = new THREE.Vector3();
     this.searchStep = 0;
     this.caught = false;
+    this.playerVisible = false;
     this.elapsed = 0;
 
     this.group = new THREE.Group();
@@ -139,6 +140,16 @@ export class Attendant {
     });
   }
 
+  rememberHiddenPosition(position) {
+    if (this.caught || !position) return false;
+    this.lastSeen.set(position.x, 0, position.z);
+    this.searchCenter.copy(this.lastSeen);
+    this.playerVisible = false;
+    this.state = 'investigate';
+    this.stateTimer = 6;
+    return true;
+  }
+
   reportNoise(position, radius = 8) {
     if (this.caught) return;
     const distance = this.group.position.distanceTo(new THREE.Vector3(position.x, 0, position.z));
@@ -156,6 +167,7 @@ export class Attendant {
     this.stateTimer = Math.max(0, this.stateTimer - dt);
 
     const visible = !hidden && this.canSeePlayer(playerPosition);
+    this.playerVisible = visible;
     if (visible) {
       this.lastSeen.set(playerPosition.x, 0, playerPosition.z);
       this.searchCenter.copy(this.lastSeen);
@@ -225,6 +237,7 @@ export class Attendant {
 
   reset(position) {
     this.caught = false;
+    this.playerVisible = false;
     this.state = 'patrol';
     this.stateTimer = 0;
     this.patrolIndex = 0;
