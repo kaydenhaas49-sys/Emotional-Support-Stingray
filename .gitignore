@@ -1,0 +1,6 @@
+# Generated dependencies/build output
+node_modules/
+dist/
+
+# Generated from the Archade SketchUp source during dev/build.
+public/assets/environment/archade/classroom.glb

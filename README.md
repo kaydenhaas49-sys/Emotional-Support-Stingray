@@ -74,7 +74,9 @@ See [docs/FIRST_TEST.md](docs/FIRST_TEST.md) for the layout, objective, controls
 ## Asset handling
 
 - GLB files intended to load in the browser belong under public/assets/.
-- The soft-play environment scene is at public/assets/environment/soft-play/model.glb.
+- The Archade classroom SketchUp source is stored at source-assets/archade/archade-classroom.skp with Git LFS.
+- The build converts it to public/assets/environment/archade/classroom.glb using OpenSKP; the game prefers this scene and retains the previous soft-play model as a fallback.
+- For local conversion, run npm install --no-save --package-lock=false openskp@1.7.0, then npm run convert:archade.
 - Blender, FBX, and OBJ source files belong under assets/.
 - Poly Haven environment texture maps are under public/assets/textures/.
 - Keep original licence/readme files alongside source assets whenever possible and record imported asset provenance in [docs/ASSET_CREDITS.md](docs/ASSET_CREDITS.md).

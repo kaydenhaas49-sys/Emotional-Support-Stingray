@@ -321,51 +321,74 @@ export class PlayCentreTest {
   }
 
   async loadSoftPlayModel() {
-    try {
-      const gltf = await this.modelLoader.loadAsync(`${import.meta.env.BASE_URL}assets/environment/soft-play/model.glb`);
-      const model = gltf.scene;
-      model.name = 'Soft-play environment asset';
-      model.updateMatrixWorld(true);
-
-      const sourceBounds = new THREE.Box3().setFromObject(model);
-      const sourceSize = sourceBounds.getSize(new THREE.Vector3());
-      const footprint = Math.max(sourceSize.x, sourceSize.z);
-
-      if (!Number.isFinite(footprint) || footprint < 0.01 || sourceSize.y < 0.01) {
-        throw new Error('The soft-play model has no usable 3D bounds.');
+    const candidates = [
+      {
+        path: `${import.meta.env.BASE_URL}assets/environment/archade/classroom.glb`,
+        name: 'Archade preschool classroom'
+      },
+      {
+        path: `${import.meta.env.BASE_URL}assets/environment/soft-play/model.glb`,
+        name: 'Legacy soft-play model'
       }
+    ];
 
-      // Fit the play structure to believable room dimensions while preserving its proportions.
-      const scale = Math.min(17.0 / footprint, 4.65 / sourceSize.y);
-      model.scale.setScalar(scale);
-      model.updateMatrixWorld(true);
+    for (const candidate of candidates) {
+      let model = null;
+      const initialColliderCount = this.collisionBoxes.length;
 
-      const fittedBounds = new THREE.Box3().setFromObject(model);
-      const center = fittedBounds.getCenter(new THREE.Vector3());
-      model.position.x -= center.x + 4.5;
-      model.position.z -= center.z + 4.0;
-      model.position.y -= fittedBounds.min.y;
-      model.updateMatrixWorld(true);
+      try {
+        const gltf = await this.modelLoader.loadAsync(candidate.path);
+        model = gltf.scene;
+        model.name = candidate.name;
+        model.updateMatrixWorld(true);
 
-      model.traverse((child) => {
-        if (child.isMesh) {
-          child.castShadow = true;
-          child.receiveShadow = true;
+        const sourceBounds = new THREE.Box3().setFromObject(model);
+        const sourceSize = sourceBounds.getSize(new THREE.Vector3());
+        const footprint = Math.max(sourceSize.x, sourceSize.z);
+        if (!Number.isFinite(footprint) || footprint < 0.01 || sourceSize.y < 0.01) {
+          throw new Error('The imported scene has no usable 3D bounds.');
         }
-      });
 
-      this.scene.add(model);
-      this.addSoftPlayCollision(model);
-      this.modelLoaded = true;
-      console.info('[PlayCentreTest] Soft-play model fitted and collision generated.', {
-        sourceSize,
-        fittedSize: new THREE.Box3().setFromObject(model).getSize(new THREE.Vector3()),
-        colliderCount: this.softPlayCollisionCount
-      });
-    } catch (error) {
-      console.error('[PlayCentreTest] Could not load soft-play model; using a greybox fallback.', error);
-      this.buildSoftPlayFallback();
+        // Fit the imported scene to the existing play-area footprint while
+        // preserving its proportions. OpenSKP exports metres and glTF Y-up.
+        const scale = Math.min(17.0 / footprint, 4.65 / sourceSize.y);
+        model.scale.setScalar(scale);
+        model.updateMatrixWorld(true);
+
+        const fittedBounds = new THREE.Box3().setFromObject(model);
+        const center = fittedBounds.getCenter(new THREE.Vector3());
+        model.position.x -= center.x + 4.5;
+        model.position.z -= center.z + 4.0;
+        model.position.y -= fittedBounds.min.y;
+        model.updateMatrixWorld(true);
+
+        model.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        });
+
+        this.scene.add(model);
+        this.addSoftPlayCollision(model);
+        this.modelLoaded = true;
+        this.loadedEnvironmentAsset = candidate.name;
+        console.info('[PlayCentreTest] Environment asset fitted and collision generated.', {
+          asset: candidate.name,
+          sourceSize,
+          fittedSize: new THREE.Box3().setFromObject(model).getSize(new THREE.Vector3()),
+          colliderCount: this.softPlayCollisionCount
+        });
+        return;
+      } catch (error) {
+        if (model && model.parent) model.parent.remove(model);
+        this.collisionBoxes.length = initialColliderCount;
+        console.warn('[PlayCentreTest] Could not use ' + candidate.name + '; trying the next asset.', error);
+      }
     }
+
+    console.error('[PlayCentreTest] No environment model could be loaded; using a greybox fallback.');
+    this.buildSoftPlayFallback();
   }
 
   addSoftPlayCollision(model) {

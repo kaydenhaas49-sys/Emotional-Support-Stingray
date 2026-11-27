@@ -45,3 +45,11 @@ Do not mark planned assets as imported until the files and their licence informa
 
 - [Damaged Plaster](https://polyhaven.com/a/damaged_plaster) — Poly Haven, CC0.
 - [Concrete Floor 01](https://polyhaven.com/a/concrete_floor_01) — Poly Haven, CC0.
+
+
+## Archade preschool classroom source scene
+
+- Source scene: source-assets/archade/archade-classroom.skp (stored with Git LFS).
+- Source listing: https://archade.app/marketplace/3d-models/interior-scenes/preschooler-classroom-education-scene-sketchup.
+- Runtime conversion: the build converts the SketchUp source to public/assets/environment/archade/classroom.glb using OpenSKP 1.7.0 (MIT-licensed converter).
+- Licence note: no separate licence/readme file was included alongside the uploaded source file. Check the Archade listing's current asset terms and retain any required attribution before distributing the converted model.
