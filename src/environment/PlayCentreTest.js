@@ -38,7 +38,7 @@ export class PlayCentreTest {
     this.buildLighting();
     await this.loadSoftPlayModel();
     this.buildDecor(materials);
-    this.buildStealthGameplay(materials);
+    await this.buildStealthGameplay(materials);
     return this;
   }
 
@@ -327,23 +327,24 @@ export class PlayCentreTest {
       model.name = 'Soft-play environment asset';
       model.updateMatrixWorld(true);
 
-      const originalBounds = new THREE.Box3().setFromObject(model);
-      const originalSize = originalBounds.getSize(new THREE.Vector3());
-      const footprint = Math.max(originalSize.x, originalSize.z);
+      const sourceBounds = new THREE.Box3().setFromObject(model);
+      const sourceSize = sourceBounds.getSize(new THREE.Vector3());
+      const footprint = Math.max(sourceSize.x, sourceSize.z);
 
-      if (!Number.isFinite(footprint) || footprint < 0.01) {
+      if (!Number.isFinite(footprint) || footprint < 0.01 || sourceSize.y < 0.01) {
         throw new Error('The soft-play model has no usable 3D bounds.');
       }
 
-      const scale = 13.5 / footprint;
-      model.scale.multiplyScalar(scale);
+      // Fit the play structure to believable room dimensions while preserving its proportions.
+      const scale = Math.min(17.0 / footprint, 4.65 / sourceSize.y);
+      model.scale.setScalar(scale);
       model.updateMatrixWorld(true);
 
-      const scaledBounds = new THREE.Box3().setFromObject(model);
-      const center = scaledBounds.getCenter(new THREE.Vector3());
-      model.position.x += -4.5 - center.x;
-      model.position.z += -4.0 - center.z;
-      model.position.y += -scaledBounds.min.y;
+      const fittedBounds = new THREE.Box3().setFromObject(model);
+      const center = fittedBounds.getCenter(new THREE.Vector3());
+      model.position.x -= center.x + 4.5;
+      model.position.z -= center.z + 4.0;
+      model.position.y -= fittedBounds.min.y;
       model.updateMatrixWorld(true);
 
       model.traverse((child) => {
@@ -354,15 +355,150 @@ export class PlayCentreTest {
       });
 
       this.scene.add(model);
+      this.addSoftPlayCollision(model);
       this.modelLoaded = true;
-      console.info('[PlayCentreTest] Soft-play model loaded and auto-fitted.', {
-        sourceSize: originalSize,
-        scale
+      console.info('[PlayCentreTest] Soft-play model fitted and collision generated.', {
+        sourceSize,
+        fittedSize: new THREE.Box3().setFromObject(model).getSize(new THREE.Vector3()),
+        colliderCount: this.softPlayCollisionCount
       });
     } catch (error) {
       console.error('[PlayCentreTest] Could not load soft-play model; using a greybox fallback.', error);
       this.buildSoftPlayFallback();
     }
+  }
+
+  addSoftPlayCollision(model) {
+    const cellSize = 0.58;
+    const occupied = new Set();
+    const position = new THREE.Vector3();
+    const a = new THREE.Vector3();
+    const b = new THREE.Vector3();
+    const c = new THREE.Vector3();
+    const ab = new THREE.Vector3();
+    const ac = new THREE.Vector3();
+    const normal = new THREE.Vector3();
+
+    const pointInTriangle = (px, pz, ax, az, bx, bz, cx, cz) => {
+      const denominator = (bz - cz) * (ax - cx) + (cx - bx) * (az - cz);
+      if (Math.abs(denominator) < 1e-7) return false;
+      const u = ((bz - cz) * (px - cx) + (cx - bx) * (pz - cz)) / denominator;
+      const v = ((cz - az) * (px - cx) + (ax - cx) * (pz - cz)) / denominator;
+      return u >= -0.01 && v >= -0.01 && u + v <= 1.01;
+    };
+
+    const addCell = (x, z) => occupied.add(x + ',' + z);
+    model.updateMatrixWorld(true);
+
+    model.traverse((mesh) => {
+      if (!mesh.isMesh || !mesh.geometry || !mesh.geometry.attributes.position) return;
+      const geometry = mesh.geometry;
+      const vertices = geometry.attributes.position;
+      const indices = geometry.index;
+      const triangleCount = indices ? indices.count / 3 : vertices.count / 3;
+
+      for (let triangle = 0; triangle < triangleCount; triangle += 1) {
+        const ia = indices ? indices.getX(triangle * 3) : triangle * 3;
+        const ib = indices ? indices.getX(triangle * 3 + 1) : triangle * 3 + 1;
+        const ic = indices ? indices.getX(triangle * 3 + 2) : triangle * 3 + 2;
+
+        a.fromBufferAttribute(vertices, ia).applyMatrix4(mesh.matrixWorld);
+        b.fromBufferAttribute(vertices, ib).applyMatrix4(mesh.matrixWorld);
+        c.fromBufferAttribute(vertices, ic).applyMatrix4(mesh.matrixWorld);
+
+        const minY = Math.min(a.y, b.y, c.y);
+        const maxY = Math.max(a.y, b.y, c.y);
+        // Only wall-like surfaces intersecting the player's body become blockers.
+        if (maxY < 0.22 || minY > 1.92) continue;
+
+        ab.subVectors(b, a);
+        ac.subVectors(c, a);
+        normal.crossVectors(ab, ac);
+        const normalLength = normal.length();
+        if (normalLength < 1e-7 || Math.abs(normal.y) / normalLength > 0.78) continue;
+
+        const minX = Math.min(a.x, b.x, c.x);
+        const maxX = Math.max(a.x, b.x, c.x);
+        const minZ = Math.min(a.z, b.z, c.z);
+        const maxZ = Math.max(a.z, b.z, c.z);
+        const startX = Math.floor(minX / cellSize);
+        const endX = Math.floor(maxX / cellSize);
+        const startZ = Math.floor(minZ / cellSize);
+        const endZ = Math.floor(maxZ / cellSize);
+        const projectedArea = Math.abs(
+          (b.x - a.x) * (c.z - a.z) - (c.x - a.x) * (b.z - a.z)
+        );
+
+        for (let cellX = startX; cellX <= endX; cellX += 1) {
+          for (let cellZ = startZ; cellZ <= endZ; cellZ += 1) {
+            const centerX = (cellX + 0.5) * cellSize;
+            const centerZ = (cellZ + 0.5) * cellSize;
+            const inside = projectedArea < 0.025
+              ? centerX >= minX - cellSize * 0.35 && centerX <= maxX + cellSize * 0.35 &&
+                centerZ >= minZ - cellSize * 0.35 && centerZ <= maxZ + cellSize * 0.35
+              : pointInTriangle(centerX, centerZ, a.x, a.z, b.x, b.z, c.x, c.z);
+            if (inside) addCell(cellX, cellZ);
+          }
+        }
+
+        // Preserve very thin posts and rails that can fall between grid-cell centres.
+        if (projectedArea < 0.025) {
+          addCell(Math.floor((a.x + b.x + c.x) / 3 / cellSize), Math.floor((a.z + b.z + c.z) / 3 / cellSize));
+        }
+      }
+    });
+
+    // Merge adjacent occupied cells into wider boxes to keep player collision inexpensive.
+    const rows = new Map();
+    occupied.forEach((key) => {
+      const [x, z] = key.split(',').map(Number);
+      if (!rows.has(z)) rows.set(z, []);
+      rows.get(z).push(x);
+    });
+
+    const rowRuns = new Map();
+    [...rows.keys()].sort((a, b) => a - b).forEach((z) => {
+      const xs = rows.get(z).sort((a, b) => a - b);
+      let start = null;
+      let previous = null;
+      const runs = [];
+      xs.forEach((x) => {
+        if (start === null) start = x;
+        else if (x !== previous + 1) {
+          runs.push([start, previous]);
+          start = x;
+        }
+        previous = x;
+      });
+      if (start !== null) runs.push([start, previous]);
+      rowRuns.set(z, runs);
+    });
+
+    const active = new Map();
+    [...rowRuns.keys()].sort((a, b) => a - b).forEach((z) => {
+      const nextActive = new Map();
+      rowRuns.get(z).forEach(([start, end]) => {
+        const key = start + ':' + end;
+        const existing = active.get(key);
+        if (existing && Math.abs(existing.maxZ - z * cellSize) < 1e-6) {
+          existing.maxZ = (z + 1) * cellSize;
+          nextActive.set(key, existing);
+        } else {
+          const box = {
+            minX: start * cellSize,
+            maxX: (end + 1) * cellSize,
+            minZ: z * cellSize,
+            maxZ: (z + 1) * cellSize
+          };
+          this.collisionBoxes.push(box);
+          nextActive.set(key, box);
+        }
+      });
+      active.clear();
+      nextActive.forEach((box, key) => active.set(key, box));
+    });
+
+    this.softPlayCollisionCount = occupied.size;
   }
 
   buildSoftPlayFallback() {
@@ -389,7 +525,7 @@ export class PlayCentreTest {
     }));
   }
 
-  buildStealthGameplay(materials) {
+  async buildStealthGameplay(materials) {
     this.interactables = this.interactables.filter((item) => item.id === 'note');
     const colors = [0x61c4d7, 0xdca759, 0x88c978];
     const names = ['blue', 'amber', 'green'];
@@ -460,8 +596,10 @@ export class PlayCentreTest {
         { x: 14, z: -16 }, { x: 14, z: -12 }, { x: 18, z: -12 },
         { x: 18, z: 12 }, { x: -18, z: 12 }
       ],
+      collisionBoxes: this.collisionBoxes,
       onCaught: () => { this.caught = true; }
     });
+    await this.attendant.ready;
   }
 
   getCollisionBoxes() {
