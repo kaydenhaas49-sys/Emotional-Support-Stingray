@@ -158,8 +158,8 @@ export class PlayCentreTest {
     this.addBox('Front entrance header', 4.4, 0.45, wallThickness, 0, wallHeight - 0.225, halfDepth, materials.trim);
 
     // Back wall opening joins the main room to a staff corridor.
-    this.addBox('Back wall left', halfWidth + 2.9, wallHeight, wallThickness, -(halfWidth - 2.9) / 2, wallHeight / 2, -halfDepth, materials.wall, true);
-    this.addBox('Back wall right', halfWidth - 7.1, wallHeight, wallThickness, (halfWidth + 7.1) / 2, wallHeight / 2, -halfDepth, materials.wall, true);
+    this.addBox('Back wall left', halfWidth + 11.9, wallHeight, wallThickness, (11.9 - halfWidth) / 2, wallHeight / 2, -halfDepth, materials.wall, true);
+    this.addBox('Back wall right', halfWidth - 16.1, wallHeight, wallThickness, (halfWidth + 16.1) / 2, wallHeight / 2, -halfDepth, materials.wall, true);
     this.addBox('Staff doorway header', 4.2, 0.45, wallThickness, 14, wallHeight - 0.225, -halfDepth, materials.trim);
 
     const corridorCenterZ = -halfDepth - 5;
