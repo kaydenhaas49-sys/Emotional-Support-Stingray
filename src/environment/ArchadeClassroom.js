@@ -4,6 +4,7 @@ import {MeshoptDecoder} from 'three/addons/libs/meshopt_decoder.module.js';
 import {Attendant} from '../characters/Attendant.js';
 import {EYE_HEIGHT} from '../utils/Constants.js';
 
+const ROOM_XZ_SCALE=2.0; // Turn the imported classroom into a large shared hall without changing ceiling height.
 const MODEL=`${import.meta.env.BASE_URL}assets/environment/archade/classroom.glb`;
 const COLLISION=`${import.meta.env.BASE_URL}assets/environment/archade/collision.json`;
 const COLORS=[0x61c4d7,0xdca759,0x88c978];
@@ -22,8 +23,12 @@ export class ArchadeClassroom {
     const [response,gltf]=await Promise.all([fetch(COLLISION,{cache:'force-cache'}),this.loader.loadAsync(MODEL)]);
     if(!response.ok)throw new Error('Collision request failed: HTTP '+response.status);
     const data=await response.json();this.validate(data,gltf.scene);
+    this.expandRoomLayout(data);
     const model=gltf.scene,o=data.modelOffset;
-    model.name='Archade preschool classroom';model.position.set(o.x,o.y,o.z);model.scale.setScalar(1);model.updateMatrixWorld(true);
+    model.name='Archade preschool classroom — expanded hall';
+    model.position.set(o.x*ROOM_XZ_SCALE,o.y,o.z*ROOM_XZ_SCALE);
+    model.scale.set(ROOM_XZ_SCALE,1,ROOM_XZ_SCALE);
+    model.updateMatrixWorld(true);
     model.traverse(object=>{
       if(!object.isMesh)return;
       object.castShadow=false;object.receiveShadow=false;object.frustumCulled=true;
@@ -39,9 +44,26 @@ export class ArchadeClassroom {
     this.hideSpots=this.points.hideSpots.slice(0,2).map(p=>({...p,radius:1.55}));
     await this.buildAttendant();
     console.info('[ArchadeClassroom] Standalone classroom loaded.',{
-      dimensions:data.sourceBounds.size.map(v=>Number(v.toFixed(2))),colliders:this.collisionBoxes.length
+      dimensions:data.sourceBounds.size.map((v,i)=>Number((v*(i===1?1:ROOM_XZ_SCALE)).toFixed(2))),
+      roomScale:`${ROOM_XZ_SCALE}x across the floor`,colliders:this.collisionBoxes.length
     });
     return this;
+  }
+  expandRoomLayout(data) {
+    const scale=ROOM_XZ_SCALE;
+    const scalePoint=point=>{point.x*=scale;point.z*=scale;};
+    // The model is widened in X/Z only. Move every gameplay coordinate and
+    // collision bound by the same amount so movement, patrols and objectives
+    // stay aligned with the expanded architecture. Character and ceiling
+    // heights remain human-scale.
+    for(const box of data.boxes) {
+      box.minX*=scale;box.maxX*=scale;box.minZ*=scale;box.maxZ*=scale;
+    }
+    scalePoint(data.spawn);
+    scalePoint(data.qaProbe);
+    for(const point of data.points.relaySpawns)scalePoint(point);
+    for(const point of data.points.hideSpots)scalePoint(point);
+    scalePoint(data.points.panelPosition);
   }
   validate(data,model) {
     const size=data?.sourceBounds?.size,o=data?.modelOffset,p=data?.points;
