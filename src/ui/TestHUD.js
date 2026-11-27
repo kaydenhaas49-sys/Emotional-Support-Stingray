@@ -38,13 +38,13 @@ export class TestHUD {
     this.root = document.createElement('div');
     this.root.id = 'test-hud';
     this.root.innerHTML = [
-      '<div class="hud-top"><div id="hud-objective" class="objective">Objective: Check the reception desk for a maintenance note.</div></div>',
+      '<div class="hud-top"><div id="hud-objective" class="objective">Objective: Find the maintenance panel and restore power.</div></div>',
       '<div class="crosshair"></div>',
       '<div id="hud-hint" class="hint"></div>',
       '<div id="hud-message" class="message"></div>',
       '<div class="controls">W A S D  MOVE<br>SHIFT  RUN &nbsp; • &nbsp; E  INTERACT &nbsp; • &nbsp; ESC  PAUSE</div>',
       '<section id="hud-overlay" class="overlay visible"><div class="card">',
-      '<p>Find the maintenance note, collect three relays, repeat the lamp sequence at panel 04, then return to the front exit.</p>',
+      '<p>Explore the classroom, collect three power relays, repeat the light sequence at the maintenance panel, then return to the entrance.</p>',
       '<p class="small">WASD TO MOVE · MOUSE TO LOOK · SHIFT TO RUN · E TO INTERACT</p>',
       '<button id="hud-start" class="start-button" type="button">ENTER TEST</button>',
       '</div></section>'

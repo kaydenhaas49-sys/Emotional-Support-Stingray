@@ -1,84 +1,52 @@
 import * as THREE from 'three';
+import {Camera} from './core/Camera.js';
+import {Renderer} from './core/Renderer.js';
+import {Player} from './core/Player.js';
+import {Game} from './core/Game.js';
+import {InputManager} from './input/InputManager.js';
+import {PointerLock} from './input/PointerLock.js';
+import {ArchadeClassroom} from './environment/ArchadeClassroom.js';
+import {TestHUD} from './ui/TestHUD.js';
+import {EYE_HEIGHT} from './utils/Constants.js';
 
-import { Scene } from './core/Scene.js';
-import { Camera } from './core/Camera.js';
-import { Renderer } from './core/Renderer.js';
-import { Player } from './core/Player.js';
-import { Game } from './core/Game.js';
-import { InputManager } from './input/InputManager.js';
-import { PointerLock } from './input/PointerLock.js';
-import { PlayCentreTest } from './environment/PlayCentreTest.js';
-import { TestHUD } from './ui/TestHUD.js';
-import { EYE_HEIGHT } from './utils/Constants.js';
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x12171b);
+scene.fog=new THREE.Fog(0x12171b,22,46);
+const camera=new Camera(),renderer=new Renderer();
+const webglRenderer=renderer.getRenderer();
+webglRenderer.shadowMap.enabled=false;
+webglRenderer.toneMapping=THREE.ACESFilmicToneMapping;
+webglRenderer.toneMappingExposure=1;
+const input=new InputManager(),pointerLock=new PointerLock(webglRenderer);
+const player=new Player(camera.getCamera(),input,pointerLock),hud=new TestHUD(pointerLock);
+const environment=new ArchadeClassroom(scene);
+const game=new Game(scene,camera.getCamera(),webglRenderer,player,environment,hud);
 
-// Keep the starter-kit camera, renderer, input, and movement systems;
-// replace its outdoor demo contents with the first indoor test space.
-const sceneContainer = new Scene();
-const threeScene = sceneContainer.getScene();
-threeScene.clear();
-threeScene.background = new THREE.Color(0x12171b);
-threeScene.fog = new THREE.Fog(0x12171b, 24, 52);
-
-const camera = new Camera();
-camera.getCamera().position.set(0, EYE_HEIGHT, 12);
-camera.getCamera().lookAt(-4.5, EYE_HEIGHT, -4);
-
-const renderer = new Renderer();
-const webglRenderer = renderer.getRenderer();
-webglRenderer.shadowMap.enabled = true;
-webglRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
-webglRenderer.toneMapping = THREE.ACESFilmicToneMapping;
-webglRenderer.toneMappingExposure = 1.0;
-
-const inputManager = new InputManager();
-const pointerLock = new PointerLock(webglRenderer);
-const player = new Player(camera.getCamera(), inputManager, pointerLock);
-const hud = new TestHUD(pointerLock);
-const environment = new PlayCentreTest(threeScene);
-const game = new Game(threeScene, camera.getCamera(), webglRenderer, player, environment, hud);
-
-document.addEventListener('keydown', (event) => {
-  if (event.code === 'KeyE' && !event.repeat && pointerLock.isPointerLocked()) {
-    event.preventDefault();
-    const position = camera.getCamera().position;
-    if (player.hidden) {
-      environment.toggleHide(position, hud, player);
-    } else if (environment.getNearbyInteractable(position)) {
-      environment.interact(position, hud);
-    } else if (!environment.toggleHide(position, hud, player)) {
-      environment.interact(position, hud);
-    }
+document.addEventListener('keydown',event=>{
+  if(event.code==='KeyE'&&!event.repeat&&pointerLock.isPointerLocked()) {
+    event.preventDefault();const pos=camera.getCamera().position;
+    if(player.hidden)environment.toggleHide(pos,hud,player);
+    else if(environment.getNearbyInteractable(pos))environment.interact(pos,hud);
+    else if(!environment.toggleHide(pos,hud,player))environment.interact(pos,hud);
   }
-
-  if (event.code === 'KeyR' && environment.complete) {
-    window.location.reload();
-  }
+  if(event.code==='KeyR'&&environment.complete)window.location.reload();
 });
-
 async function init() {
-  const bootStatus = document.getElementById('boot-status');
+  const status=document.getElementById('boot-status');
   try {
-    if (bootStatus) bootStatus.textContent = 'Building the play-centre scene…';
-    console.info('[Main] Building first play-centre test...');
+    if(status)status.textContent='Loading the Archade classroom…';
     await environment.build();
-    const playerStart=environment.getPlayerStart();
-    player.setCollisionBoxes(environment.getCollisionBoxes());
-    if(player.isBlocked(playerStart.x,playerStart.z)) throw new Error('Runtime player spawn failed collision clearance QA.');
-    const collisionProbe=environment.getCollisionProbe();
-    if(!collisionProbe || !player.isBlocked(collisionProbe.x,collisionProbe.z)) {
-      throw new Error('Runtime Player collision grid failed its blocking probe.');
-    }
-    camera.getCamera().position.copy(playerStart);
-    camera.getCamera().lookAt(0,EYE_HEIGHT,0);
-    game.start();
-    if (bootStatus) bootStatus.remove();
-    console.info('[Main] First test ready.');
-  } catch (error) {
-    console.error('[Main] Test environment failed to initialize:', error);
-    if (bootStatus) bootStatus.textContent = `The test could not finish loading: ${error.message || error}`;
-    hud.showMessage('The test area could not finish loading. Check the browser console.');
-    game.start();
+    const start=environment.getPlayerStart();player.setCollisionBoxes(environment.getCollisionBoxes());
+    if(player.isBlocked(start.x,start.z))throw new Error('Player spawn failed collision QA.');
+    const probe=environment.getCollisionProbe();
+    if(!probe||!player.isBlocked(probe.x,probe.z))throw new Error('Player collision grid failed blocker test.');
+    camera.getCamera().position.copy(start);camera.getCamera().lookAt(start.x,EYE_HEIGHT,0);
+    game.start();if(status)status.remove();
+    console.info('[Main] Standalone Archade classroom ready.');
+  } catch(error) {
+    console.error('[Main] Classroom initialization failed:',error);
+    if(status)status.textContent='The classroom could not finish loading: '+(error.message||error);
+    hud.showMessage('The classroom could not finish loading. Check the browser console.');
   }
 }
-
 init();
