@@ -371,7 +371,7 @@ export class PlayCentreTest {
   addSoftPlayCollision(model) {
     const cellSize = 0.58;
     const occupied = new Set();
-    const position = new THREE.Vector3();
+    const initialColliderCount = this.collisionBoxes.length;
     const a = new THREE.Vector3();
     const b = new THREE.Vector3();
     const c = new THREE.Vector3();
@@ -434,17 +434,18 @@ export class PlayCentreTest {
             const centerX = (cellX + 0.5) * cellSize;
             const centerZ = (cellZ + 0.5) * cellSize;
             const inside = projectedArea < 0.025
-              ? centerX >= minX - cellSize * 0.35 && centerX <= maxX + cellSize * 0.35 &&
-                centerZ >= minZ - cellSize * 0.35 && centerZ <= maxZ + cellSize * 0.35
+              ? centerX >= minX - cellSize * 0.62 && centerX <= maxX + cellSize * 0.62 &&
+                centerZ >= minZ - cellSize * 0.62 && centerZ <= maxZ + cellSize * 0.62
               : pointInTriangle(centerX, centerZ, a.x, a.z, b.x, b.z, c.x, c.z);
             if (inside) addCell(cellX, cellZ);
           }
         }
 
-        // Preserve very thin posts and rails that can fall between grid-cell centres.
-        if (projectedArea < 0.025) {
-          addCell(Math.floor((a.x + b.x + c.x) / 3 / cellSize), Math.floor((a.z + b.z + c.z) / 3 / cellSize));
-        }
+        // Preserve thin posts and small surface triangles that fall between cell centres.
+        addCell(
+          Math.floor((a.x + b.x + c.x) / 3 / cellSize),
+          Math.floor((a.z + b.z + c.z) / 3 / cellSize)
+        );
       }
     });
 
@@ -498,7 +499,7 @@ export class PlayCentreTest {
       nextActive.forEach((box, key) => active.set(key, box));
     });
 
-    this.softPlayCollisionCount = occupied.size;
+    this.softPlayCollisionCount = this.collisionBoxes.length - initialColliderCount;
   }
 
   buildSoftPlayFallback() {
