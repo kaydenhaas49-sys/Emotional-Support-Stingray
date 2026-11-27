@@ -43,7 +43,6 @@ export class Attendant {
     if (this.patrolPoints.length > 0) {
       this.group.position.set(this.patrolPoints[0].x, 0, this.patrolPoints[0].z);
     }
-    this.raycaster = new THREE.Raycaster();
   }
 
   createFallbackRobot() {
@@ -86,8 +85,8 @@ export class Attendant {
 
     this.visualRoot.traverse((object) => {
       if (object.isMesh) {
-        object.castShadow = true;
-        object.receiveShadow = true;
+        object.castShadow = false;
+        object.receiveShadow = false;
       }
     });
   }
@@ -116,8 +115,8 @@ export class Attendant {
 
       robot.traverse((object) => {
         if (!object.isMesh) return;
-        object.castShadow = true;
-        object.receiveShadow = true;
+        object.castShadow = false;
+        object.receiveShadow = false;
         const materials = Array.isArray(object.material) ? object.material : [object.material];
         materials.forEach((material) => {
           if (!material) return;
@@ -195,37 +194,23 @@ export class Attendant {
   }
 
   canSeePlayer(playerPosition) {
-    const toPlayer = new THREE.Vector3(
-      playerPosition.x - this.group.position.x,
-      0,
-      playerPosition.z - this.group.position.z
-    );
-    const distance = toPlayer.length();
-    if (distance > 11 || distance < 0.001) return false;
-
-    const forward = new THREE.Vector3(
-      Math.sin(this.group.rotation.y),
-      0,
-      Math.cos(this.group.rotation.y)
-    );
-    if (forward.dot(toPlayer.normalize()) < 0.25) return false;
-
-    const origin = this.group.position.clone().add(new THREE.Vector3(0, 1.85, 0));
-    const target = new THREE.Vector3(playerPosition.x, playerPosition.y, playerPosition.z);
-    const ray = target.clone().sub(origin);
-    const rayLength = ray.length();
-    this.raycaster.set(origin, ray.normalize());
-    this.raycaster.far = rayLength;
-
-    const hits = this.raycaster.intersectObjects(this.scene.children, true);
-    return !hits.some((hit) => {
-      let parent = hit.object;
-      while (parent) {
-        if (parent === this.group) return false;
-        parent = parent.parent;
+    const ox=this.group.position.x,oz=this.group.position.z;
+    const dx=playerPosition.x-ox,dz=playerPosition.z-oz,d2=dx*dx+dz*dz;
+    if(d2>121||d2<0.0001)return false;
+    const inv=1/Math.sqrt(d2);
+    if((Math.sin(this.group.rotation.y)*dx+Math.cos(this.group.rotation.y)*dz)*inv<0.25)return false;
+    for(const box of this.collisionBoxes) {
+      let tMin=0,tMax=1,hit=true;
+      for(const [origin,direction,min,max] of [[ox,dx,box.minX,box.maxX],[oz,dz,box.minZ,box.maxZ]]) {
+        if(Math.abs(direction)<1e-8){if(origin<min||origin>max){hit=false;break;}continue;}
+        const invD=1/direction;let a=(min-origin)*invD,b=(max-origin)*invD;
+        if(a>b)[a,b]=[b,a];
+        tMin=Math.max(tMin,a);tMax=Math.min(tMax,b);
+        if(tMin>tMax){hit=false;break;}
       }
-      return true;
-    });
+      if(hit&&tMax>0.06&&tMin<0.94&&tMin<=tMax)return false;
+    }
+    return true;
   }
 
   rememberHiddenPosition(position) {
@@ -240,8 +225,8 @@ export class Attendant {
 
   reportNoise(position, radius = 8) {
     if (this.caught) return;
-    const distance = this.group.position.distanceTo(new THREE.Vector3(position.x, 0, position.z));
-    if (distance > radius || this.state === 'investigate') return;
+    const dx=position.x-this.group.position.x,dz=position.z-this.group.position.z;
+    if(dx*dx+dz*dz>radius*radius||this.state==='investigate')return;
 
     this.searchCenter.set(position.x, 0, position.z);
     this.state = 'investigate';

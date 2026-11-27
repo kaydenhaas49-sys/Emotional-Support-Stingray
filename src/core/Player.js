@@ -21,6 +21,8 @@ export class Player {
     };
     this.direction = new THREE.Vector3();
     this.velocity = new THREE.Vector3();
+    this.cameraDirection = new THREE.Vector3();
+    this.sideDirection = new THREE.Vector3();
     this.collisionBoxes = [];
     this.collisionRadius = 0.32;
     this.collisionGrid = new Map();
@@ -68,13 +70,10 @@ export class Player {
     const maxCellX = Math.floor((x + radius) / cellSize);
     const minCellZ = Math.floor((z - radius) / cellSize);
     const maxCellZ = Math.floor((z + radius) / cellSize);
-    const tested = new Set();
     for (let cellX = minCellX; cellX <= maxCellX; cellX += 1) {
       for (let cellZ = minCellZ; cellZ <= maxCellZ; cellZ += 1) {
         const candidates = this.collisionGrid.get(cellX + ',' + cellZ) ?? [];
         for (const box of candidates) {
-          if (tested.has(box)) continue;
-          tested.add(box);
           if (x + radius > box.minX && x - radius < box.maxX &&
               z + radius > box.minZ && z - radius < box.maxZ) return true;
         }
@@ -94,17 +93,13 @@ export class Player {
     if (keys.right) this.direction.x += 1;
     this.direction.normalize();
 
-    const cameraDirection = new THREE.Vector3();
-    this.camera.getWorldDirection(cameraDirection);
-    cameraDirection.y = 0;
-    cameraDirection.normalize();
-
-    const sideDirection = new THREE.Vector3();
-    sideDirection.crossVectors(cameraDirection, this.camera.up).normalize();
-
+    this.camera.getWorldDirection(this.cameraDirection);
+    this.cameraDirection.y = 0;
+    this.cameraDirection.normalize();
+    this.sideDirection.crossVectors(this.cameraDirection, this.camera.up).normalize();
     this.velocity.set(0, 0, 0);
-    this.velocity.addScaledVector(cameraDirection, -this.direction.z);
-    this.velocity.addScaledVector(sideDirection, this.direction.x);
+    this.velocity.addScaledVector(this.cameraDirection, -this.direction.z);
+    this.velocity.addScaledVector(this.sideDirection, this.direction.x);
     this.velocity.normalize();
 
     const currentSpeed = keys.sprint
