@@ -138,6 +138,9 @@ const pointInTriangle = (px, pz, ax, az, bx, bz, cx, cz) => {
   return u >= -0.015 && v >= -0.015 && u + v <= 1.015;
 };
 const addCell = (x, z) => occupied.add(x + ',' + z);
+const floorGridCellSize = 0.75;
+const walkableFloorCells = new Set();
+const addFloorCell = (x, z) => walkableFloorCells.add(x + ',' + z);
 
 for (const primitive of bakedScene.glbPrimitives) {
   const positions = primitive.positions;
@@ -150,7 +153,6 @@ for (const primitive of bakedScene.glbPrimitives) {
     const bx = positions[ib], by = positions[ib + 1], bz = positions[ib + 2];
     const cx = positions[ic], cy = positions[ic + 1], cz = positions[ic + 2];
     const lowY = Math.min(ay, by, cy), highY = Math.max(ay, by, cy);
-    if (highY < bodyMinY || lowY > bodyMaxY) continue;
     const abx = bx - ax, aby = by - ay, abz = bz - az;
     const acx = cx - ax, acy = cy - ay, acz = cz - az;
     const nx = aby * acz - abz * acy;
@@ -158,6 +160,24 @@ for (const primitive of bakedScene.glbPrimitives) {
     const nz = abx * acy - aby * acx;
     const normalLength = Math.hypot(nx, ny, nz);
     if (normalLength < 1e-8) continue;
+
+    // Extract the actual room floor separately from obstacle surfaces.
+    const normalYRatio = Math.abs(ny) / normalLength;
+    const triangleCenterY = (ay + by + cy) / 3;
+    if (normalYRatio > 0.985 && Math.abs(triangleCenterY - floorY) <= 0.18) {
+      const floorMinX = Math.floor((Math.min(ax,bx,cx)-bounds.center[0])/floorGridCellSize);
+      const floorMaxX = Math.floor((Math.max(ax,bx,cx)-bounds.center[0])/floorGridCellSize);
+      const floorMinZ = Math.floor((Math.min(az,bz,cz)-bounds.center[2])/floorGridCellSize);
+      const floorMaxZ = Math.floor((Math.max(az,bz,cz)-bounds.center[2])/floorGridCellSize);
+      for (let floorX=floorMinX; floorX<=floorMaxX; floorX+=1) {
+        const sampleX=(floorX+0.5)*floorGridCellSize+bounds.center[0];
+        for (let floorZ=floorMinZ; floorZ<=floorMaxZ; floorZ+=1) {
+          const sampleZ=(floorZ+0.5)*floorGridCellSize+bounds.center[2];
+          if (pointInTriangle(sampleX,sampleZ,ax,az,bx,bz,cx,cz)) addFloorCell(floorX,floorZ);
+        }
+      }
+    }
+    if (highY < bodyMinY || lowY > bodyMaxY) continue;
     // Keep walls, rails, slides and angled surfaces. Exclude near-horizontal
     // floor/ceiling faces so they do not turn the whole room into a blocker.
     if (Math.abs(ny) / normalLength > 0.94) continue;
@@ -241,37 +261,58 @@ function isBlocked(x, z) {
     z + playerRadius > box.minZ && z - playerRadius < box.maxZ
   );
 }
-function findSafeSpawn() {
-  const halfX = width / 2, halfZ = depth / 2;
-  const preferredZ = Math.max(-halfZ + 1, halfZ - 2.2);
-  for (let ring = 0; ring <= 40; ring += 1) {
-    const d = ring * 0.4;
-    const candidates = ring === 0 ? [[0, preferredZ]] : [
-      [0, preferredZ - d], [d, preferredZ], [-d, preferredZ], [0, preferredZ + d],
-      [d, preferredZ - d], [-d, preferredZ - d], [d, preferredZ + d], [-d, preferredZ + d]
-    ];
-    for (const [x, z] of candidates) {
-      if (Math.abs(x) > width / 2 - 0.75 || Math.abs(z) > depth / 2 - 0.75) continue;
-      if (!isBlocked(x, z)) return { x: Number(x.toFixed(3)), z: Number(z.toFixed(3)) };
-    }
+const halfWidth=width/2;
+const halfDepth=depth/2;
+const walkableFloorPositions=[];
+for(const key of walkableFloorCells){
+  const split=key.indexOf(',');
+  const cellX=Number(key.slice(0,split)),cellZ=Number(key.slice(split+1));
+  const x=(cellX+0.5)*floorGridCellSize,z=(cellZ+0.5)*floorGridCellSize;
+  if(Math.abs(x)>halfWidth-1.1||Math.abs(z)>halfDepth-1.1)continue;
+  if(!isBlocked(x,z))walkableFloorPositions.push({x,z});
+}
+if(walkableFloorPositions.length<100){
+  throw new Error('Floor walkability extraction is incomplete: only '+walkableFloorPositions.length+' clear floor cells.');
+}
+function findSafeSpawn(){
+  const preferredZ=Math.max(-halfDepth+1.1,halfDepth-2.2);
+  let best=null,bestDistance=Infinity;
+  for(const candidate of walkableFloorPositions){
+    const distance=candidate.x*candidate.x+(candidate.z-preferredZ)**2;
+    if(distance<bestDistance){best=candidate;bestDistance=distance;}
   }
-  for (let z = -halfZ + 0.8; z <= halfZ - 0.8; z += 0.4) {
-    for (let x = -halfX + 0.8; x <= halfX - 0.8; x += 0.4) {
-      if (!isBlocked(x, z)) return { x: Number(x.toFixed(3)), z: Number(z.toFixed(3)) };
+  return best?{x:Number(best.x.toFixed(3)),z:Number(best.z.toFixed(3))}:null;
+}
+function findSpacedPoints(origin,count){
+  const chosen=[],used=new Set();
+  let minimumSpacing=6.0;
+  while(chosen.length<count&&minimumSpacing>=3.5){
+    let best=null,bestDistance=-1;
+    for(const candidate of walkableFloorPositions){
+      const key=candidate.x.toFixed(2)+','+candidate.z.toFixed(2);
+      if(used.has(key))continue;
+      let nearest=Math.hypot(candidate.x-origin.x,candidate.z-origin.z);
+      for(const point of chosen)nearest=Math.min(nearest,Math.hypot(candidate.x-point.x,candidate.z-point.z));
+      if(nearest>bestDistance){best={...candidate,key};bestDistance=nearest;}
     }
+    if(!best||bestDistance<minimumSpacing){minimumSpacing-=0.5;continue;}
+    used.add(best.key);
+    chosen.push({x:Number(best.x.toFixed(3)),z:Number(best.z.toFixed(3))});
   }
-  return null;
+  return chosen;
 }
 
 if (collisionBoxes.length < 10 || occupied.size < 100) {
   throw new Error('Collision generation coverage is insufficient: ' + collisionBoxes.length + ' boxes / ' + occupied.size + ' cells; body-height triangles=' + trianglesRasterized + '.');
 }
 const spawn = findSafeSpawn();
-if (!spawn) throw new Error('Collision QA failed: no clear spawn point exists inside the classroom footprint.');
+if (!spawn) throw new Error('Collision QA failed: no clear spawn point exists on the extracted floor.');
 if (isBlocked(spawn.x, spawn.z)) throw new Error('Collision QA failed: selected player spawn intersects collision geometry.');
 const probe = collisionBoxes[Math.floor(collisionBoxes.length / 2)];
 const probeX = (probe.minX + probe.maxX) / 2, probeZ = (probe.minZ + probe.maxZ) / 2;
 if (!isBlocked(probeX, probeZ)) throw new Error('Collision QA failed: generated AABBs do not block a player-sized probe.');
+const gameplayPoints = findSpacedPoints(spawn, 5);
+if (gameplayPoints.length < 5) throw new Error('Could not find five separated, collision-free floor points for relays and hiding places.');
 for (const box of collisionBoxes) {
   if (![box.minX, box.maxX, box.minZ, box.maxZ].every(Number.isFinite) || box.minX >= box.maxX || box.minZ >= box.maxZ) {
     throw new Error('Collision QA failed: invalid AABB coordinates.');
@@ -285,6 +326,14 @@ const collisionData = {
   groundY: floorY, groundedHeight,
   modelOffset: { x: -bounds.center[0], y: -floorY, z: -bounds.center[2] },
   spawn,
+  qaProbe: { x: probeX, z: probeZ },
+  points: {
+    relaySpawns: gameplayPoints.slice(0,3),
+    hideSpots: [
+      { name: 'activity alcove', ...gameplayPoints[3] },
+      { name: 'play-structure nook', ...gameplayPoints[4] }
+    ]
+  },
   stats: {
     sourceMeshResources: instancedScene.meshResources.length,
     floorY,
@@ -292,6 +341,8 @@ const collisionData = {
     sourceTriangles: trianglesVisited,
     bodyHeightSurfaces: trianglesRasterized,
     rasterCellTests: cellTests,
+    floorCells: walkableFloorCells.size,
+    walkableFloorCells: walkableFloorPositions.length,
     occupiedCells: occupied.size,
     colliderBoxes: collisionBoxes.length,
     spawnClear: !isBlocked(spawn.x, spawn.z),
@@ -303,6 +354,7 @@ fs.mkdirSync(path.dirname(collisionPath), { recursive: true });
 fs.writeFileSync(collisionPath, JSON.stringify(collisionData));
 console.info('[Archade pipeline] Collision QA passed: ' + occupied.size + ' occupied cells merged into ' + collisionBoxes.length + ' AABBs.');
 console.info('[Archade pipeline] Safe player spawn: X=' + spawn.x + ' m, Z=' + spawn.z + ' m.');
+console.info('[Archade pipeline] Walkable floor cells: ' + walkableFloorPositions.length + '; gameplay points: ' + gameplayPoints.length + '.');
 
 const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'archade-convert-'));
 const rawPath = path.join(tempDir, 'classroom-source.glb');
@@ -353,5 +405,7 @@ console.info('  Runtime vertices: ' + vertexCount.toLocaleString());
 console.info('  Runtime triangles: ' + triangleCount.toLocaleString());
 console.info('  Life-size bounds (metres): ' + bounds.size.map((v) => v.toFixed(3)).join(' x '));
 console.info('  Collision AABBs: ' + collisionBoxes.length + ' (from original, unsimplified SketchUp triangles)');
+console.info('  Walkable floor cells: ' + walkableFloorPositions.length);
 console.info('  Player spawn clearance: PASS');
+console.info('  Player collision probe: PASS');
 console.info('[Archade pipeline] Generated model and collision data are ready.');

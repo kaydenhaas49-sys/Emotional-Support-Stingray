@@ -61,9 +61,15 @@ async function init() {
     if (bootStatus) bootStatus.textContent = 'Building the play-centre scene…';
     console.info('[Main] Building first play-centre test...');
     await environment.build();
-    camera.getCamera().position.copy(environment.getPlayerStart());
-    camera.getCamera().lookAt(0, EYE_HEIGHT, 0);
+    const playerStart=environment.getPlayerStart();
     player.setCollisionBoxes(environment.getCollisionBoxes());
+    if(player.isBlocked(playerStart.x,playerStart.z)) throw new Error('Runtime player spawn failed collision clearance QA.');
+    const collisionProbe=environment.getCollisionProbe();
+    if(!collisionProbe || !player.isBlocked(collisionProbe.x,collisionProbe.z)) {
+      throw new Error('Runtime Player collision grid failed its blocking probe.');
+    }
+    camera.getCamera().position.copy(playerStart);
+    camera.getCamera().lookAt(0,EYE_HEIGHT,0);
     game.start();
     if (bootStatus) bootStatus.remove();
     console.info('[Main] First test ready.');

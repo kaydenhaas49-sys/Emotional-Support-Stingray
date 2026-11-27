@@ -20,6 +20,8 @@ export class PlayCentreTest {
     this.complete = false;
     this.indicator = null;
     this.modelLoaded = false;
+    this.environmentPoints = null;
+    this.collisionProbe = null;
     this.relayCount = 0;
     this.puzzleOrder = [2, 0, 1];
     this.puzzleProgress = 0;
@@ -355,8 +357,34 @@ export class PlayCentreTest {
           const collision = await response.json();
           const bounds = collision.sourceBounds;
           const boxes = collision.boxes;
-          if (collision.version !== 1 || !bounds?.size || !Array.isArray(boxes) || boxes.length < 10) {
+          const sourceSize = bounds?.size;
+          const spawn = collision.spawn;
+          const qaProbe = collision.qaProbe;
+          const points = collision.points;
+          if (collision.version !== 1 ||
+              !Array.isArray(sourceSize) || sourceSize.length !== 3 ||
+              !sourceSize.every((v)=>Number.isFinite(v)&&v>0.1) ||
+              !Array.isArray(boxes) || boxes.length < 10 || boxes.length > 5000 ||
+              !spawn || ![spawn.x,spawn.z].every(Number.isFinite) ||
+              !qaProbe || ![qaProbe.x,qaProbe.z].every(Number.isFinite) ||
+              !points || !Array.isArray(points.relaySpawns) || points.relaySpawns.length < 3 ||
+              !Array.isArray(points.hideSpots) || points.hideSpots.length < 2) {
             throw new Error('The precomputed collision file is incomplete or invalid.');
+          }
+          if (Math.abs(Number(collision.playerRadius)-0.32)>0.001) {
+            throw new Error('Collision file player radius does not match the runtime controller.');
+          }
+          for(const box of boxes) {
+            if (![box.minX,box.maxX,box.minZ,box.maxZ].every(Number.isFinite) ||
+                box.minX>=box.maxX || box.minZ>=box.maxZ) {
+              throw new Error('Collision file contains an invalid blocker AABB.');
+            }
+          }
+          const rawBounds=new THREE.Box3().setFromObject(model);
+          const rawSize=rawBounds.getSize(new THREE.Vector3());
+          if(Math.abs(rawSize.x-sourceSize[0])>0.12 || Math.abs(rawSize.y-sourceSize[1])>0.12 ||
+             Math.abs(rawSize.z-sourceSize[2])>0.12) {
+            throw new Error('Runtime GLB dimensions do not match collision source bounds.');
           }
           const offset = collision.modelOffset;
           if (![offset?.x, offset?.y, offset?.z].every(Number.isFinite)) {
@@ -365,11 +393,32 @@ export class PlayCentreTest {
           model.position.set(offset.x, offset.y, offset.z);
           model.scale.setScalar(1);
           model.updateMatrixWorld(true);
+          const placedBounds=new THREE.Box3().setFromObject(model);
+          const expectedMin=[bounds.min[0]+offset.x,bounds.min[1]+offset.y,bounds.min[2]+offset.z];
+          const expectedMax=[bounds.max[0]+offset.x,bounds.max[1]+offset.y,bounds.max[2]+offset.z];
+          const actualMin=[placedBounds.min.x,placedBounds.min.y,placedBounds.min.z];
+          const actualMax=[placedBounds.max.x,placedBounds.max.y,placedBounds.max.z];
+          if(expectedMin.some((v,i)=>Math.abs(v-actualMin[i])>0.12) ||
+             expectedMax.some((v,i)=>Math.abs(v-actualMax[i])>0.12)) {
+            throw new Error('Loaded model transform does not line up with collision geometry.');
+          }
+          if(spawn.x < -sourceSize[0]/2 || spawn.x > sourceSize[0]/2 ||
+             spawn.z < -sourceSize[2]/2 || spawn.z > sourceSize[2]/2) {
+            throw new Error('Player spawn lies outside the imported classroom footprint.');
+          }
+          const collisionBlocks=(x,z)=>boxes.some((box)=>
+            x+collision.playerRadius>box.minX && x-collision.playerRadius<box.maxX &&
+            z+collision.playerRadius>box.minZ && z-collision.playerRadius<box.maxZ
+          );
+          if(collisionBlocks(spawn.x,spawn.z)) throw new Error('Generated player spawn is blocked.');
+          if(!collisionBlocks(qaProbe.x,qaProbe.z)) throw new Error('Generated collision probe is not blocked.');
           const groundedHeight = Number(collision.groundedHeight);
           if (!Number.isFinite(groundedHeight) || groundedHeight <= 1) throw new Error('Detected grounded room height is invalid.');
           this.environmentBounds = { ...bounds, size: [bounds.size[0], groundedHeight, bounds.size[2]] };
           this.environmentCollisionStats = collision.stats;
-          this.playerStart.set(collision.spawn.x, EYE_HEIGHT, collision.spawn.z);
+          this.environmentPoints = points;
+          this.collisionProbe = qaProbe;
+          this.playerStart.set(spawn.x, EYE_HEIGHT, spawn.z);
           this.collisionBoxes.push(...boxes);
           this.softPlayCollisionCount = boxes.length;
         } else {
@@ -582,7 +631,7 @@ export class PlayCentreTest {
     this.interactables = this.interactables.filter((item) => item.id === 'note');
     const colors = [0x61c4d7, 0xdca759, 0x88c978];
     const names = ['blue', 'amber', 'green'];
-    const relayPositions = [[-16.5, 9.5], [7.5, -8.5], [-17.5, -10.5]];
+    const relayPositions = this.environmentPoints?.relaySpawns?.map(({x,z})=>[x,z]) ?? [[-10,7],[9,-5],[-9,-7]];
     this.relays = relayPositions.map(([x, z], index) => {
       const material = new THREE.MeshStandardMaterial({
         color: colors[index], emissive: colors[index], emissiveIntensity: 0.7,
@@ -630,17 +679,18 @@ export class PlayCentreTest {
     this.exitGateCollisionIndex = this.collisionBoxes.length - 1;
     this.interactables.push({ id: 'exit', label: 'Use the front exit', x: 0, z: 14.2, radius: 1.4 });
 
-    this.hideSpots = [
-      { name: 'maintenance alcove', x: -18.6, z: -5.8, radius: 1.7 },
-      { name: 'play tunnel', x: 5.5, z: -8.5, radius: 1.7 }
+    this.hideSpots = this.environmentPoints?.hideSpots?.map((spot)=>({
+      name:spot.name,x:spot.x,z:spot.z,radius:1.7
+    })) ?? [
+      {name:'maintenance alcove',x:-10,z:-5,radius:1.7},
+      {name:'play tunnel',x:8,z:-7,radius:1.7}
     ];
     const cover = new THREE.MeshStandardMaterial({ color: 0x3b4141, roughness: 0.95 });
-    this.addBox('Alcove side cover', 0.18, 2.2, 2.0, -19.5, 1.1, -5.5, cover, true);
-    this.addBox('Alcove rear cover', 2.0, 2.2, 0.18, -18.5, 1.1, -6.55, cover, true);
-    this.addBox('Alcove privacy screen', 1.0, 2.2, 0.18, -17.75, 1.1, -4.45, cover, true);
-    this.addBox('Tunnel side cover', 0.22, 2.0, 2.5, 6.75, 1.0, -8.5, cover, true);
-    this.addBox('Tunnel rear cover', 2.0, 2.0, 0.22, 5.6, 1.0, -9.65, cover, true);
-    this.addBox('Tunnel privacy screen', 1.15, 2.0, 0.2, 4.9, 1.0, -7.35, cover, true);
+    this.hideSpots.forEach((spot,index)=>{
+      this.addBox('Hiding nook side screen '+index,0.16,2.0,2.0,spot.x+0.95,1.0,spot.z,cover,true);
+      this.addBox('Hiding nook rear screen '+index,2.0,2.0,0.16,spot.x,1.0,spot.z-0.95,cover,true);
+      this.addBox('Hiding nook privacy screen '+index,0.9,2.0,0.16,spot.x-0.55,1.0,spot.z+0.95,cover,true);
+    });
 
     this.attendant = new Attendant(this.scene, {
       patrolPoints: [
@@ -661,6 +711,10 @@ export class PlayCentreTest {
 
   getPlayerStart() {
     return this.playerStart.clone();
+  }
+
+  getCollisionProbe() {
+    return this.collisionProbe ? { ...this.collisionProbe } : null;
   }
 
   getNearbyHideSpot(position) {
