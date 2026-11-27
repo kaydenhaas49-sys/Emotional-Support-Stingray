@@ -11,7 +11,7 @@ import {EYE_HEIGHT} from './utils/Constants.js';
 
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x12171b);
-scene.fog=new THREE.Fog(0x12171b,48,105);
+scene.fog=new THREE.Fog(0x12171b,95,220);
 const camera=new Camera(),renderer=new Renderer();
 const webglRenderer=renderer.getRenderer();
 webglRenderer.shadowMap.enabled=false;

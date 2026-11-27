@@ -4,7 +4,7 @@ import {MeshoptDecoder} from 'three/addons/libs/meshopt_decoder.module.js';
 import {Attendant} from '../characters/Attendant.js';
 import {EYE_HEIGHT} from '../utils/Constants.js';
 
-const ROOM_XZ_SCALE=2.0; // Turn the imported classroom into a large shared hall without changing ceiling height.
+const ROOM_XZ_SCALE=4.0; // Four times the original floor width and depth; props retain their original vertical height. // Turn the imported classroom into a large shared hall without changing ceiling height.
 const MODEL=`${import.meta.env.BASE_URL}assets/environment/archade/classroom.glb`;
 const COLLISION=`${import.meta.env.BASE_URL}assets/environment/archade/collision.json`;
 const COLORS=[0x61c4d7,0xdca759,0x88c978];
