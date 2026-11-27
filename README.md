@@ -87,4 +87,4 @@ See [docs/FIRST_TEST.md](docs/FIRST_TEST.md) for the layout, objective, controls
 - [Vite](https://vite.dev/)
 - [lil-gui](https://lil-gui.georgealways.com/) — retained for future developer tools
 
-Physics and navigation libraries remain candidates, not installed dependencies. The first test uses simple axis-aligned room collision and does not yet provide collision against the imported play structure.
+The imported classroom retains life-size metre dimensions. Its precomputed AABB collision comes from the original source triangles; run npm run test:collision to verify spawn clearance and blocker tests.

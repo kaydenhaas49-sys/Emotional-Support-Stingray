@@ -49,7 +49,8 @@ Do not mark planned assets as imported until the files and their licence informa
 
 ## Archade preschool classroom source scene
 
-- Source scene: source-assets/archade/archade-classroom.skp (stored with Git LFS).
-- Source listing: https://archade.app/marketplace/3d-models/interior-scenes/preschooler-classroom-education-scene-sketchup.
-- Runtime conversion: the build converts the SketchUp source to public/assets/environment/archade/classroom.glb using OpenSKP 1.7.0 (MIT-licensed converter).
-- Licence note: no separate licence/readme file was included alongside the uploaded source file. Check the Archade listing's current asset terms and retain any required attribution before distributing the converted model.
+- **Source listing:** [Archade — Preschooler Classroom Education Scene](https://archade.app/marketplace/3d-models/interior-scenes/preschooler-classroom-education-scene-sketchup).
+- **Creator:** Eliad Dorfman / Archade marketplace.
+- **Licence:** Archade Free Licence supplied with the download. It permits personal and commercial project use, modification and adaptation, with no attribution requirement. It prohibits redistributing the asset as a standalone file or repackaging it as a library, template pack, bundle or dataset.
+- **Runtime asset:** `public/assets/environment/archade/classroom.glb`, optimized and adapted for this game; collision is generated from the original source geometry in `public/assets/environment/archade/collision.json`.
+- The editable `.skp` source is kept outside the public game repository.
