@@ -61,6 +61,8 @@ async function init() {
     if (bootStatus) bootStatus.textContent = 'Building the play-centre scene…';
     console.info('[Main] Building first play-centre test...');
     await environment.build();
+    camera.getCamera().position.copy(environment.getPlayerStart());
+    camera.getCamera().lookAt(0, EYE_HEIGHT, 0);
     player.setCollisionBoxes(environment.getCollisionBoxes());
     game.start();
     if (bootStatus) bootStatus.remove();

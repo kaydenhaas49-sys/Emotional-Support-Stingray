@@ -31,7 +31,7 @@ jobs:
       - name: Install dependencies
         run: npm install
       - name: Install SketchUp converter
-        run: npm install --no-save --package-lock=false openskp@1.7.0
+        run: npm install --no-save --package-lock=false openskp@1.7.0 @gltf-transform/cli@4.5.1 sharp
       - name: Convert Archade classroom to GLB
         run: npm run convert:archade
       - name: Build site

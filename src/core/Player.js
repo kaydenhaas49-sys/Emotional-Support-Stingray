@@ -23,6 +23,8 @@ export class Player {
     this.velocity = new THREE.Vector3();
     this.collisionBoxes = [];
     this.collisionRadius = 0.32;
+    this.collisionGrid = new Map();
+    this.collisionGridCellSize = 4;
     this.hidden = false;
     this.setupMouseLook();
   }
@@ -42,16 +44,43 @@ export class Player {
 
   setCollisionBoxes(boxes) {
     this.collisionBoxes = Array.isArray(boxes) ? boxes : [];
+    this.collisionGrid.clear();
+    const cellSize = this.collisionGridCellSize;
+    for (const box of this.collisionBoxes) {
+      const minCellX = Math.floor(box.minX / cellSize);
+      const maxCellX = Math.floor(box.maxX / cellSize);
+      const minCellZ = Math.floor(box.minZ / cellSize);
+      const maxCellZ = Math.floor(box.maxZ / cellSize);
+      for (let cellX = minCellX; cellX <= maxCellX; cellX += 1) {
+        for (let cellZ = minCellZ; cellZ <= maxCellZ; cellZ += 1) {
+          const key = cellX + ',' + cellZ;
+          if (!this.collisionGrid.has(key)) this.collisionGrid.set(key, []);
+          this.collisionGrid.get(key).push(box);
+        }
+      }
+    }
   }
 
   isBlocked(x, z) {
     const radius = this.collisionRadius;
-    return this.collisionBoxes.some((box) =>
-      x + radius > box.minX &&
-      x - radius < box.maxX &&
-      z + radius > box.minZ &&
-      z - radius < box.maxZ
-    );
+    const cellSize = this.collisionGridCellSize;
+    const minCellX = Math.floor((x - radius) / cellSize);
+    const maxCellX = Math.floor((x + radius) / cellSize);
+    const minCellZ = Math.floor((z - radius) / cellSize);
+    const maxCellZ = Math.floor((z + radius) / cellSize);
+    const tested = new Set();
+    for (let cellX = minCellX; cellX <= maxCellX; cellX += 1) {
+      for (let cellZ = minCellZ; cellZ <= maxCellZ; cellZ += 1) {
+        const candidates = this.collisionGrid.get(cellX + ',' + cellZ) ?? [];
+        for (const box of candidates) {
+          if (tested.has(box)) continue;
+          tested.add(box);
+          if (x + radius > box.minX && x - radius < box.maxX &&
+              z + radius > box.minZ && z - radius < box.maxZ) return true;
+        }
+      }
+    }
+    return false;
   }
 
   update(delta) {

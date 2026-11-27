@@ -28,8 +28,9 @@ Click **Enter Test** to capture the mouse.
 
 - This is a greybox slice. Room proportions, prop placement, lighting, and material tiling still need review in a browser.
 - The attendant uses the Quaternius robot FBX and its available animation clips, but its patrol route is still waypoint-based and does not use a full navigation mesh.
-- The soft-play structure now generates approximate collision blockers from its visible mesh surfaces. Curved tunnels, rails, and closely spaced pieces still need in-browser collision tuning.
-- Player collision remains approximate AABB/grid collision rather than a full physics simulation.
+- The Archade SketchUp source is converted at build time to a life-size, optimized GLB. Source bounds are preserved in metres, with no fit-to-room scaling.
+- Collision blockers are generated offline from the original, unsimplified SketchUp triangles. The collision JSON is validated during the build, then loaded as AABBs and spatially indexed by the player controller.
+- Player collision remains a ground-plane AABB approximation. It does not yet simulate climbing, jumping, or vertical physics.
 - There is no positional audio, save system, combat, or finished narrative.
 - If the soft-play model cannot load, a simple primitive fallback is shown.
 

@@ -27,7 +27,7 @@
     "preview": "vite preview",
     "predev": "node scripts/convert-archade.mjs --optional",
     "prebuild": "node scripts/convert-archade.mjs --optional",
-    "convert:archade": "node scripts/convert-archade.mjs"
+    "convert:archade": "node scripts/convert-archade.mjs --force"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",

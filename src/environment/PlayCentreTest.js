@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Attendant } from '../characters/Attendant.js';
 import { EYE_HEIGHT } from '../utils/Constants.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 
 const ASSET_ROOT = `${import.meta.env.BASE_URL}assets/textures/`;
 
@@ -10,6 +11,7 @@ export class PlayCentreTest {
     this.scene = scene;
     this.textureLoader = new THREE.TextureLoader();
     this.modelLoader = new GLTFLoader();
+    this.modelLoader.setMeshoptDecoder(MeshoptDecoder);
     this.collisionBoxes = [];
     this.lights = [];
     this.interactables = [];
@@ -32,11 +34,11 @@ export class PlayCentreTest {
 
   async build() {
     const materials = await this.createMaterials();
+    await this.loadSoftPlayModel();
     this.buildArchitecture(materials);
     this.buildReception(materials);
     this.buildStaffPanel(materials);
     this.buildLighting();
-    await this.loadSoftPlayModel();
     this.buildDecor(materials);
     await this.buildStealthGameplay(materials);
     return this;
@@ -121,16 +123,21 @@ export class PlayCentreTest {
   }
 
   buildArchitecture(materials) {
-    const width = 44;
-    const depth = 32;
+    const bounds = this.environmentBounds;
+    const width = Math.max(44, (bounds?.size?.[0] ?? 36) + 8);
+    const depth = Math.max(32, (bounds?.size?.[2] ?? 24) + 8);
     const halfWidth = width / 2;
     const halfDepth = depth / 2;
-    const wallHeight = 6;
+    const wallHeight = Math.max(6, (bounds?.size?.[1] ?? 5.6) + 0.45);
+    this.roomWidth = width;
+    this.roomDepth = depth;
+    this.wallHeight = wallHeight;
     const wallThickness = 0.5;
 
     const floor = new THREE.Mesh(new THREE.PlaneGeometry(width, depth), materials.floor);
     floor.name = 'Concrete floor';
     floor.rotation.x = -Math.PI / 2;
+    floor.position.y = -0.035;
     floor.receiveShadow = true;
     this.scene.add(floor);
 
@@ -138,7 +145,7 @@ export class PlayCentreTest {
     const corridorFloor = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 10), materials.floor);
     corridorFloor.name = 'Staff corridor concrete floor';
     corridorFloor.rotation.x = -Math.PI / 2;
-    corridorFloor.position.set(14, 0, -21);
+    corridorFloor.position.set(14, -0.035, -halfDepth - 5);
     corridorFloor.receiveShadow = true;
     this.scene.add(corridorFloor);
 
@@ -146,23 +153,22 @@ export class PlayCentreTest {
     this.addBox('Right perimeter wall', wallThickness, wallHeight, depth, halfWidth, wallHeight / 2, 0, materials.wall, true);
 
     // Main entrance opening on the front wall.
-    this.addBox('Front wall left', 19.8, wallHeight, wallThickness, -12.1, wallHeight / 2, halfDepth, materials.wall, true);
-    this.addBox('Front wall right', 19.8, wallHeight, wallThickness, 12.1, wallHeight / 2, halfDepth, materials.wall, true);
-    this.addBox('Front entrance header', 4.4, 0.45, wallThickness, 0, 5.78, halfDepth, materials.trim);
+    this.addBox('Front wall left', halfWidth - 2.2, wallHeight, wallThickness, -(halfWidth + 2.2) / 2, wallHeight / 2, halfDepth, materials.wall, true);
+    this.addBox('Front wall right', halfWidth - 2.2, wallHeight, wallThickness, (halfWidth + 2.2) / 2, wallHeight / 2, halfDepth, materials.wall, true);
+    this.addBox('Front entrance header', 4.4, 0.45, wallThickness, 0, wallHeight - 0.225, halfDepth, materials.trim);
 
-    // Back wall opening joins the main play room to a narrow staff corridor.
-    this.addBox('Back wall left', 33.9, wallHeight, wallThickness, -5.05, wallHeight / 2, -halfDepth, materials.wall, true);
-    this.addBox('Back wall right', 5.9, wallHeight, wallThickness, 19.05, wallHeight / 2, -halfDepth, materials.wall, true);
-    this.addBox('Staff doorway header', 4.2, 0.45, wallThickness, 14, 5.78, -halfDepth, materials.trim);
+    // Back wall opening joins the main room to a staff corridor.
+    this.addBox('Back wall left', halfWidth + 2.9, wallHeight, wallThickness, -(halfWidth - 2.9) / 2, wallHeight / 2, -halfDepth, materials.wall, true);
+    this.addBox('Back wall right', halfWidth - 7.1, wallHeight, wallThickness, (halfWidth + 7.1) / 2, wallHeight / 2, -halfDepth, materials.wall, true);
+    this.addBox('Staff doorway header', 4.2, 0.45, wallThickness, 14, wallHeight - 0.225, -halfDepth, materials.trim);
 
-    this.addBox('Staff corridor left wall', 0.45, wallHeight, 10, 11.9, 3, -21, materials.wall, true);
-    this.addBox('Staff corridor right wall', 0.45, wallHeight, 10, 16.1, 3, -21, materials.wall, true);
-    this.addBox('Staff corridor end wall', 4.2, wallHeight, wallThickness, 14, 3, -26, materials.wall, true);
+    const corridorCenterZ = -halfDepth - 5;
+    this.addBox('Staff corridor left wall', 0.45, wallHeight, 10, 11.9, wallHeight / 2, corridorCenterZ, materials.wall, true);
+    this.addBox('Staff corridor right wall', 0.45, wallHeight, 10, 16.1, wallHeight / 2, corridorCenterZ, materials.wall, true);
+    this.addBox('Staff corridor end wall', 4.2, wallHeight, wallThickness, 14, wallHeight / 2, -halfDepth - 10, materials.wall, true);
 
     const ceilingMaterial = new THREE.MeshStandardMaterial({
-      color: 0x252a2e,
-      roughness: 1,
-      side: THREE.DoubleSide
+      color: 0x252a2e, roughness: 1, side: THREE.DoubleSide
     });
     const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(width, depth), ceilingMaterial);
     ceiling.name = 'Main ceiling';
@@ -171,21 +177,20 @@ export class PlayCentreTest {
     ceiling.receiveShadow = true;
     this.scene.add(ceiling);
 
-    this.addBox('Corridor ceiling', 4.2, 0.18, 10, 14, 5.92, -21, materials.dark);
-
-    [-13, 0, 13].forEach((x) => {
-      this.addBox('Ceiling cross beam', 0.22, 0.22, 32, x, 5.78, 0, materials.dark);
+    this.addBox('Corridor ceiling', 4.2, 0.18, 10, 14, wallHeight - 0.08, corridorCenterZ, materials.dark);
+    [-halfWidth / 1.5, 0, halfWidth / 1.5].forEach((x) => {
+      this.addBox('Ceiling cross beam', 0.22, 0.22, depth, x, wallHeight - 0.22, 0, materials.dark);
     });
 
-    this.addBox('Entrance side post left', 0.18, 3.4, 0.18, -2.25, 1.7, 15.65, materials.trim);
-    this.addBox('Entrance side post right', 0.18, 3.4, 0.18, 2.25, 1.7, 15.65, materials.trim);
+    this.addBox('Entrance side post left', 0.18, 3.4, 0.18, -2.25, 1.7, halfDepth - 0.35, materials.trim);
+    this.addBox('Entrance side post right', 0.18, 3.4, 0.18, 2.25, 1.7, halfDepth - 0.35, materials.trim);
 
     const guide = new THREE.Mesh(
       new THREE.PlaneGeometry(3.2, 0.12),
       new THREE.MeshBasicMaterial({ color: 0xb28b4a })
     );
     guide.rotation.x = -Math.PI / 2;
-    guide.position.set(0, 0.015, 13.4);
+    guide.position.set(0, 0.015, halfDepth - 2.6);
     this.scene.add(guide);
   }
 
@@ -304,11 +309,11 @@ export class PlayCentreTest {
         roughness: 0.45
       });
       const fixture = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.1, 0.42), fixtureMaterial);
-      fixture.position.set(x, 5.55, z);
+      fixture.position.set(x, (this.wallHeight ?? 6) - 0.45, z);
       this.scene.add(fixture);
 
       const light = new THREE.PointLight(0xcbd8df, intensity, 18, 2);
-      light.position.set(x, 5.15, z);
+      light.position.set(x, (this.wallHeight ?? 6) - 0.85, z);
       light.castShadow = index === 1 || index === 4;
       this.scene.add(light);
       this.lights.push({ light, intensity, flickers, phase: index * 1.73 });
@@ -324,43 +329,65 @@ export class PlayCentreTest {
     const candidates = [
       {
         path: `${import.meta.env.BASE_URL}assets/environment/archade/classroom.glb`,
-        name: 'Archade preschool classroom'
+        collisionPath: `${import.meta.env.BASE_URL}assets/environment/archade/collision.json`,
+        name: 'Archade preschool classroom',
+        lifeSize: true
       },
       {
         path: `${import.meta.env.BASE_URL}assets/environment/soft-play/model.glb`,
-        name: 'Legacy soft-play model'
+        name: 'Legacy soft-play model',
+        lifeSize: false
       }
     ];
 
     for (const candidate of candidates) {
       let model = null;
       const initialColliderCount = this.collisionBoxes.length;
-
       try {
         const gltf = await this.modelLoader.loadAsync(candidate.path);
         model = gltf.scene;
         model.name = candidate.name;
         model.updateMatrixWorld(true);
 
-        const sourceBounds = new THREE.Box3().setFromObject(model);
-        const sourceSize = sourceBounds.getSize(new THREE.Vector3());
-        const footprint = Math.max(sourceSize.x, sourceSize.z);
-        if (!Number.isFinite(footprint) || footprint < 0.01 || sourceSize.y < 0.01) {
-          throw new Error('The imported scene has no usable 3D bounds.');
+        if (candidate.lifeSize) {
+          const response = await fetch(candidate.collisionPath, { cache: 'no-store' });
+          if (!response.ok) throw new Error('Collision data request failed: HTTP ' + response.status);
+          const collision = await response.json();
+          const bounds = collision.sourceBounds;
+          const boxes = collision.boxes;
+          if (collision.version !== 1 || !bounds?.size || !Array.isArray(boxes) || boxes.length < 10) {
+            throw new Error('The precomputed collision file is incomplete or invalid.');
+          }
+          const offset = collision.modelOffset;
+          if (![offset?.x, offset?.y, offset?.z].every(Number.isFinite)) {
+            throw new Error('The imported scene transform is missing or invalid.');
+          }
+          model.position.set(offset.x, offset.y, offset.z);
+          model.scale.setScalar(1);
+          model.updateMatrixWorld(true);
+          this.environmentBounds = bounds;
+          this.environmentCollisionStats = collision.stats;
+          this.playerStart.set(collision.spawn.x, EYE_HEIGHT, collision.spawn.z);
+          this.collisionBoxes.push(...boxes);
+          this.softPlayCollisionCount = boxes.length;
+        } else {
+          const sourceBounds = new THREE.Box3().setFromObject(model);
+          const sourceSize = sourceBounds.getSize(new THREE.Vector3());
+          const footprint = Math.max(sourceSize.x, sourceSize.z);
+          if (!Number.isFinite(footprint) || footprint < 0.01 || sourceSize.y < 0.01) {
+            throw new Error('The fallback model has no usable 3D bounds.');
+          }
+          const scale = Math.min(17.0 / footprint, 4.65 / sourceSize.y);
+          model.scale.setScalar(scale);
+          model.updateMatrixWorld(true);
+          const fittedBounds = new THREE.Box3().setFromObject(model);
+          const center = fittedBounds.getCenter(new THREE.Vector3());
+          model.position.x -= center.x + 4.5;
+          model.position.z -= center.z + 4.0;
+          model.position.y -= fittedBounds.min.y;
+          model.updateMatrixWorld(true);
+          this.addSoftPlayCollision(model);
         }
-
-        // Fit the imported scene to the existing play-area footprint while
-        // preserving its proportions. OpenSKP exports metres and glTF Y-up.
-        const scale = Math.min(17.0 / footprint, 4.65 / sourceSize.y);
-        model.scale.setScalar(scale);
-        model.updateMatrixWorld(true);
-
-        const fittedBounds = new THREE.Box3().setFromObject(model);
-        const center = fittedBounds.getCenter(new THREE.Vector3());
-        model.position.x -= center.x + 4.5;
-        model.position.z -= center.z + 4.0;
-        model.position.y -= fittedBounds.min.y;
-        model.updateMatrixWorld(true);
 
         model.traverse((child) => {
           if (child.isMesh) {
@@ -368,21 +395,21 @@ export class PlayCentreTest {
             child.receiveShadow = true;
           }
         });
-
         this.scene.add(model);
-        this.addSoftPlayCollision(model);
         this.modelLoaded = true;
         this.loadedEnvironmentAsset = candidate.name;
-        console.info('[PlayCentreTest] Environment asset fitted and collision generated.', {
+        console.info('[PlayCentreTest] Loaded environment at source scale.', {
           asset: candidate.name,
-          sourceSize,
-          fittedSize: new THREE.Box3().setFromObject(model).getSize(new THREE.Vector3()),
-          colliderCount: this.softPlayCollisionCount
+          lifeSize: candidate.lifeSize === true,
+          dimensionsMetres: this.environmentBounds?.size ?? new THREE.Box3().setFromObject(model).getSize(new THREE.Vector3()),
+          collisionBoxes: this.softPlayCollisionCount
         });
         return;
       } catch (error) {
         if (model && model.parent) model.parent.remove(model);
         this.collisionBoxes.length = initialColliderCount;
+        this.environmentBounds = null;
+        this.environmentCollisionStats = null;
         console.warn('[PlayCentreTest] Could not use ' + candidate.name + '; trying the next asset.', error);
       }
     }
@@ -628,6 +655,10 @@ export class PlayCentreTest {
 
   getCollisionBoxes() {
     return this.collisionBoxes;
+  }
+
+  getPlayerStart() {
+    return this.playerStart.clone();
   }
 
   getNearbyHideSpot(position) {
