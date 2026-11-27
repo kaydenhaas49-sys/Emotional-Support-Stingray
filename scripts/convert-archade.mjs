@@ -76,9 +76,56 @@ console.info('[Archade pipeline] World-space collision primitives: ' + bakedScen
 // Bake a ground-plane collision grid from every original triangle. This is
 // intentionally generated BEFORE mesh simplification/compression, so visual
 // optimization can never remove collision surfaces.
+// Detect the actual walkable floor from the strongest near-horizontal surface
+// in the lower 55% of the scene. A stray object below the floor must not shift
+// the player band or make collision sampling miss the room furnishings.
+const floorBinSize = 0.05;
+const floorBins = new Map();
+for (const primitive of bakedScene.glbPrimitives) {
+  const positions = primitive.positions, indices = primitive.indices;
+  if (!positions || !indices) continue;
+  for (let i = 0; i + 2 < indices.length; i += 3) {
+    const ia = indices[i] * 3, ib = indices[i + 1] * 3, ic = indices[i + 2] * 3;
+    const ax = positions[ia], ay = positions[ia + 1], az = positions[ia + 2];
+    const bx = positions[ib], by = positions[ib + 1], bz = positions[ib + 2];
+    const cx = positions[ic], cy = positions[ic + 1], cz = positions[ic + 2];
+    const abx = bx - ax, aby = by - ay, abz = bz - az;
+    const acx = cx - ax, acy = cy - ay, acz = cz - az;
+    const nx = aby * acz - abz * acy;
+    const ny = abz * acx - abx * acz;
+    const nz = abx * acy - aby * acx;
+    const areaTwice = Math.hypot(nx, ny, nz);
+    if (areaTwice < 1e-8 || Math.abs(ny) / areaTwice < 0.985) continue;
+    const centerY = (ay + by + cy) / 3;
+    const relativeY = centerY - minY;
+    if (relativeY < -0.02 || relativeY > height * 0.55) continue;
+    const bin = Math.round(centerY / floorBinSize);
+    floorBins.set(bin, (floorBins.get(bin) ?? 0) + areaTwice * 0.5);
+  }
+}
+let strongestFloorBin = null, strongestFloorArea = 0;
+for (const [bin, area] of floorBins) {
+  if (area > strongestFloorArea) { strongestFloorBin = bin; strongestFloorArea = area; }
+}
+let floorY = minY;
+if (strongestFloorBin !== null && strongestFloorArea >= 1.0) {
+  let weightedArea = 0, weightedY = 0;
+  for (let bin = strongestFloorBin - 1; bin <= strongestFloorBin + 1; bin += 1) {
+    const area = floorBins.get(bin) ?? 0;
+    weightedArea += area;
+    weightedY += area * (bin * floorBinSize);
+  }
+  if (weightedArea > 0) floorY = weightedY / weightedArea;
+}
+const groundedHeight = maxY - floorY;
+if (!(groundedHeight > 1.0 && groundedHeight <= 30)) {
+  throw new Error('Detected floor height is outside a plausible room range: ' + groundedHeight.toFixed(3) + ' m.');
+}
+console.info('[Archade pipeline] Detected floor plane: Y=' + floorY.toFixed(3) + ' m from source origin; horizontal area=' + strongestFloorArea.toFixed(2) + ' m².');
+
 const occupied = new Set();
-const bodyMinY = minY + 0.08;
-const bodyMaxY = minY + playerBodyHeight;
+const bodyMinY = floorY + 0.08;
+const bodyMaxY = floorY + playerBodyHeight;
 let trianglesVisited = 0;
 let trianglesRasterized = 0;
 let cellTests = 0;
@@ -234,10 +281,13 @@ const collisionData = {
   version: 1, units: 'metres',
   coordinateSystem: 'Y-up; XZ collision plane; model centered at X/Z origin and grounded at Y=0',
   cellSize, playerRadius, playerBodyHeight, sourceBounds: bounds,
-  modelOffset: { x: -bounds.center[0], y: -minY, z: -bounds.center[2] },
+  groundY: floorY, groundedHeight,
+  modelOffset: { x: -bounds.center[0], y: -floorY, z: -bounds.center[2] },
   spawn,
   stats: {
     sourceMeshResources: instancedScene.meshResources.length,
+    floorY,
+    floorSurfaceArea: strongestFloorArea,
     sourceTriangles: trianglesVisited,
     bodyHeightSurfaces: trianglesRasterized,
     rasterCellTests: cellTests,

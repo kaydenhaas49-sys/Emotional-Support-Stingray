@@ -365,7 +365,9 @@ export class PlayCentreTest {
           model.position.set(offset.x, offset.y, offset.z);
           model.scale.setScalar(1);
           model.updateMatrixWorld(true);
-          this.environmentBounds = bounds;
+          const groundedHeight = Number(collision.groundedHeight);
+          if (!Number.isFinite(groundedHeight) || groundedHeight <= 1) throw new Error('Detected grounded room height is invalid.');
+          this.environmentBounds = { ...bounds, size: [bounds.size[0], groundedHeight, bounds.size[2]] };
           this.environmentCollisionStats = collision.stats;
           this.playerStart.set(collision.spawn.x, EYE_HEIGHT, collision.spawn.z);
           this.collisionBoxes.push(...boxes);
