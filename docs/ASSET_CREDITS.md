@@ -15,7 +15,7 @@ This file records the provenance of assets currently present in the repository. 
 - **Creator:** Quaternius
 - **Source:** [Quaternius](https://quaternius.com/)
 - **Licence:** CC0 1.0 Universal (see `assets/characters/robot-placeholder/LICENSE.txt`)
-- **Use:** Temporary robot model for import, scale, and animation tests. It is not a final character design.
+- **Use:** Prototype attendant character. The game loads the FBX at runtime, fits it to character height, and uses embedded idle/walk/run clips when available. It remains a placeholder pending a final character design.
 
 ## KinemIQ / Quaternius animation pack
 

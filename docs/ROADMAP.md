@@ -18,7 +18,8 @@ This roadmap is prototype-first. Finish each stage with something playable or ve
 - [x] Add hiding spots and an original attendant encounter.
 - [x] Define a start point, checkpoint after being caught, and exit condition.
 - [ ] Review scale, navigation, and imported model placement in the browser.
-- [ ] Add collision against the play structure and remaining large props.
+- [x] Add generated collision against the imported play structure.
+- [ ] Tune collision around curved tunnels, rails, and remaining large props.
 
 ## Stage 2 — Core atmosphere and interaction
 - [ ] Add ambient and positional audio.
@@ -28,7 +29,7 @@ This roadmap is prototype-first. Finish each stage with something playable or ve
 
 ## Stage 3 — Original attendants
 - [ ] Refine the attendant silhouette and visual language.
-- [ ] Retarget and test suitable idle, walk, run, and interaction animations.
+- [ ] Review the imported robot's idle, walk, and run clips in the browser and tune transitions.
 - [ ] Improve perception, search behavior, and navigation around obstacles.
 
 ## Stage 4 — Polish and evaluation

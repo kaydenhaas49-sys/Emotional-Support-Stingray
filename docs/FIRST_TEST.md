@@ -27,8 +27,9 @@ Click **Enter Test** to capture the mouse.
 ## Known limitations
 
 - This is a greybox slice. Room proportions, prop placement, lighting, and material tiling still need review in a browser.
-- Attendant movement follows fixed waypoints and has no full navigation mesh; it may take imperfect paths around props.
-- Player collision covers walls, the reception counter, gate, and new cover objects, but not the imported soft-play mesh.
+- The attendant uses the Quaternius robot FBX and its available animation clips, but its patrol route is still waypoint-based and does not use a full navigation mesh.
+- The soft-play structure now generates approximate collision blockers from its visible mesh surfaces. Curved tunnels, rails, and closely spaced pieces still need in-browser collision tuning.
+- Player collision remains approximate AABB/grid collision rather than a full physics simulation.
 - There is no positional audio, save system, combat, or finished narrative.
 - If the soft-play model cannot load, a simple primitive fallback is shown.
 
